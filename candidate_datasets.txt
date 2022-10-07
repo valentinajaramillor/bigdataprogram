@@ -1,0 +1,4 @@
+The candidate datasets that were:
+    1. https://data.cityofnewyork.us/Transportation/Historical-Medallion-Vehicles-Authorized/pvkv-25ck/ with https://data.cityofnewyork.us/Transportation/Medallion-Vehicles-Authorized/rhe8-mgbb
+    2. The choosen dataset: https://data.cityofnewyork.us/Social-Services/311-Service-Requests-from-2010-to-Present/erm2-nwe9
+This last dataset is the one that will be used for the training projects.

@@ -1,1 +1,8 @@
-AutoGen/
+candidate_datasets/
+dataset_test/src/main/resources/data
+dataset_test/target/scala-2.12/classes/data
+null/
+dataset_test/null
+dataset_test/.idea
+dataset_test/target
+dataset_test/project
