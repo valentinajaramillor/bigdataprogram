@@ -1,4 +1,5 @@
 import org.apache.spark.sql.SparkSession
+import org.apache.spark.sql.functions._
 import org.apache.spark.sql.types._
 
 object Demo1 extends App {
@@ -62,5 +63,83 @@ object Demo1 extends App {
     .option("nullValue", "")
     .csv("src/main/resources/data/311_Service_Requests_from_2010_to_Present.csv")
 
-  serviceRequestsDF.show()
+
+  /**
+   * Questions:
+   *
+   * 1. Which agencies have the highest number of service requests?
+   * 2. What are the most recurrent types of complaints in the agencies with the most service requests?
+   * 3. Which cities have the highest number of service requests?
+   * 4. Which boroughs have the highest number of service requests?
+   * 5. What are the most common channels through which service requests are made?
+   * 6. Which are the boroughs and zipcodes that have the highest number of noise complaints?
+   * 7. Which are the boroughs and zipcodes that have the highest number of drug activity complaints?
+   */
+
+  // Question 1
+  val serviceRequestsByAgencyDF = serviceRequestsDF
+    .groupBy(col("agency_name"))
+    .agg(count("*").as("count"))
+    .orderBy(col("count").desc_nulls_last)
+
+  // Question 2
+  def serviceRequestsByAgencyByComplaintDF(agencyName: String) = serviceRequestsDF
+    .where(col("agency_name") === agencyName)
+    .groupBy(col("complaint_type"))
+    .agg(count("*").as("count"))
+    .orderBy(col("count").desc_nulls_last)
+
+  val serviceRequestsPoliceByComplaintDF = serviceRequestsByAgencyByComplaintDF("New York City Police Department")
+  val serviceRequestsHousingByComplaintDF = serviceRequestsByAgencyByComplaintDF("Department of Housing Preservation and Development")
+  val serviceRequestsTransportationByComplaintDF = serviceRequestsByAgencyByComplaintDF("Department of Transportation")
+
+  // Question 3
+  val serviceRequestsByCityDF = serviceRequestsDF
+    .groupBy(col("city"))
+    .agg(count("*").as("count"))
+    .orderBy(col("count").desc_nulls_last)
+
+  // Question 4
+  val serviceRequestsByBoroughDF = serviceRequestsDF
+    .groupBy(col("borough"))
+    .agg(count("*").as("count"))
+    .orderBy(col("count").desc_nulls_last)
+
+  // Question 5
+  val serviceRequestsByChannelDF = serviceRequestsDF
+    .groupBy(col("open_data_channel_type"))
+    .agg(count("*").as("count"))
+    .orderBy(col("count").desc_nulls_last)
+
+  // Question 6
+  val noiseComplaintsByBoroughDF = serviceRequestsDF
+    .where(col("complaint_type").contains("Noise"))
+    .groupBy(col("borough"))
+    .agg(count("*").as("count"))
+    .orderBy(col("count").desc_nulls_last)
+
+  val noiseComplaintsByZipcodeDF = serviceRequestsDF
+    .where(col("complaint_type").contains("Noise"))
+    .groupBy(col("incident_zip"))
+    .agg(count("*").as("count"))
+    .orderBy(col("count").desc_nulls_last)
+
+
+  // Question 7
+  val drugActivityComplaintsByBoroughDF = serviceRequestsDF
+    .where(col("complaint_type") === "Drug Activity")
+    .groupBy(col("borough"))
+    .agg(count("*").as("count"))
+    .orderBy(col("count").desc_nulls_last)
+
+  drugActivityComplaintsByBoroughDF.show(5, false)
+
+  val drugActivityComplaintsByZipcodeDF = serviceRequestsDF
+    .where(col("complaint_type") === "Drug Activity")
+    .groupBy(col("incident_zip"))
+    .agg(count("*").as("count"))
+    .orderBy(col("count").desc_nulls_last)
+
+  drugActivityComplaintsByZipcodeDF.show(5, false)
+
 }
