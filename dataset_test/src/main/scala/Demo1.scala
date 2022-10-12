@@ -72,8 +72,11 @@ object Demo1 extends App {
    * 3. Which cities have the highest number of service requests?
    * 4. Which boroughs have the highest number of service requests?
    * 5. What are the most common channels through which service requests are made?
-   * 6. Which are the boroughs and zipcodes that have the highest number of noise complaints?
-   * 7. Which are the boroughs and zipcodes that have the highest number of drug activity complaints?
+   * 6. How has the channel evolved in the last years?
+   * 7. Which are the boroughs and zipcodes that have the highest number of noise complaints?
+   * 8. Which are the boroughs and zipcodes that have the highest number of drug activity complaints?
+   * 9. What is the hour of the day with the most service requests?
+   * 10. What is the average resolution time by agency?
    */
 
   // Question 1
@@ -112,6 +115,21 @@ object Demo1 extends App {
     .orderBy(col("count").desc_nulls_last)
 
   // Question 6
+  val channelEvolutionDF = serviceRequestsDF
+    .where(
+      col("open_data_channel_type") === "PHONE" or
+        col("open_data_channel_type") === "ONLINE" or
+        col("open_data_channel_type") === "MOBILE" or
+        col("open_data_channel_type") === "UNKNOWN" or
+        col("open_data_channel_type") === "OTHER")
+    .groupBy(
+      year(col("created_date")).as("created_year"),
+      col("open_data_channel_type"))
+    .agg(count("*").as("count"))
+    .orderBy(col("created_year"), col("count").desc)
+
+
+  // Question 7
   val noiseComplaintsByBoroughDF = serviceRequestsDF
     .where(col("complaint_type").contains("Noise"))
     .groupBy(col("borough"))
@@ -125,14 +143,12 @@ object Demo1 extends App {
     .orderBy(col("count").desc_nulls_last)
 
 
-  // Question 7
+  // Question 8
   val drugActivityComplaintsByBoroughDF = serviceRequestsDF
     .where(col("complaint_type") === "Drug Activity")
     .groupBy(col("borough"))
     .agg(count("*").as("count"))
     .orderBy(col("count").desc_nulls_last)
-
-  drugActivityComplaintsByBoroughDF.show(5, false)
 
   val drugActivityComplaintsByZipcodeDF = serviceRequestsDF
     .where(col("complaint_type") === "Drug Activity")
@@ -140,6 +156,21 @@ object Demo1 extends App {
     .agg(count("*").as("count"))
     .orderBy(col("count").desc_nulls_last)
 
-  drugActivityComplaintsByZipcodeDF.show(5, false)
+  // Question 9
+  val serviceRequestsByHourDF = serviceRequestsDF
+    .groupBy(hour(col("created_date")).as("hour_of_the_day"))
+    .agg(count("*").as("count"))
+    .orderBy(col("count").desc_nulls_last)
 
+  // Question 10
+  val avgResolutionTimeByAgencyDF = serviceRequestsDF
+    .where(col("status") === "Closed")
+    .groupBy(col("agency"))
+    .agg(
+      avg((col("closed_date").cast("long") - col("created_date").cast("long"))/86400)
+        .as("avg_resolution_time_in_days")
+    )
+    .orderBy(col("avg_resolution_time_in_days").desc_nulls_last)
+
+  avgResolutionTimeByAgencyDF.show(60, false)
 }
