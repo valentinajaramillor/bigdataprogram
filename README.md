@@ -18,10 +18,10 @@ Notes: The dataset that is being used for the project is https://data.cityofnewy
 10. What is the average resolution time by agency?
 
 
-// Question 1  
-+--------------------------------------------------+-------+  
+#### Question 1  ####
+
 |agency_name                                       |count  |  
-+--------------------------------------------------+-------+  
+| --- | --- | 
 |New York City Police Department                   |8943589|  
 |Department of Housing Preservation and Development|7421521|  
 |Department of Transportation                      |3680622|  
@@ -42,74 +42,77 @@ Notes: The dataset that is being used for the project is https://data.cityofnewy
 |DHS Advantage Programs                            |73021  |  
 |Mayorâs Office of Special Enforcement           |70955  |  
 |Economic Development Corporation                  |66636  |  
-+--------------------------------------------------+-------+  
+
 only showing top 20 rows  
   
-// Question 2  
+#### Question 2  ####
+
 ***New York City Police Department  
-+-----------------------+-------+  
+
+ 
 |complaint_type         |count  |  
-+-----------------------+-------+  
+| --- | --- | 
 |Noise - Residential    |2889911|  
 |Illegal Parking        |1731749|  
 |Blocked Driveway       |1306452|  
 |Noise - Street/Sidewalk|994535 |  
 |Noise - Commercial     |493605 |  
-+-----------------------+-------+  
-only showing top 5 rows  
+
   
 ***Department of Housing Preservation and Development  
-+--------------------+-------+  
+
+ 
 |complaint_type      |count  |  
-+--------------------+-------+  
+| --- | --- | 
 |HEAT/HOT WATER      |1757917|  
 |HEATING             |887720 |  
 |PLUMBING            |840512 |  
 |UNSANITARY CONDITION|675271 |  
 |GENERAL CONSTRUCTION|500821 |  
-+--------------------+-------+  
+ 
 only showing top 5 rows  
   
 ***Department of Transportation  
-+------------------------+-------+  
+
+
 |complaint_type          |count  |  
-+------------------------+-------+  
+| --- | --- |
 |Street Condition        |1155611|  
 |Street Light Condition  |1080133|  
 |Traffic Signal Condition|533054 |  
 |Sidewalk Condition      |319892 |  
 |Broken Muni Meter       |172113 |  
-+------------------------+-------+  
+ 
 only showing top 5 rows  
   
-// Question 3  
-+-------------+-------+  
+#### Question 3  ####
+
 |city         |count  |  
-+-------------+-------+  
+| --- | --- |
 |BROOKLYN     |9208752|  
 |NEW YORK     |5778849|  
 |BRONX        |5739577|  
 |null         |1857054|  
 |STATEN ISLAND|1547592|  
-+-------------+-------+  
+ 
 only showing top 5 rows  
 
-// Question 4  
-+-------------+-------+  
+#### Question 4  ####
+
 |borough      |count  |  
-+-------------+-------+  
+| --- | --- | 
 |BROOKLYN     |9270709|  
 |QUEENS       |7264167|  
 |MANHATTAN    |6046702|  
 |BRONX        |5769470|  
 |STATEN ISLAND|1573200|  
-+-------------+-------+  
+
 only showing top 5 rows  
 
-// Question 5  
-+----------------------+--------+  
+#### Question 5  ####
+
 |open_data_channel_type|count   |  
-+----------------------+--------+  
+| --- | --- |  
 |PHONE                 |14717191|  
 |ONLINE                |6846945 |  
 |UNKNOWN               |6238820 |  
@@ -130,15 +133,14 @@ only showing top 5 rows
 |1000346               |3       |  
 |990003                |2       |  
 |1017392               |2       |  
-+----------------------+--------+  
+  
 only showing top 20 rows  
 
 
-// Question 6  
-
-+------------+----------------------+-------+  
+#### Question 6  ####
+  
 |created_year|open_data_channel_type|  count|  
-+------------+----------------------+-------+  
+| --- | --- | --- |  
 |        2010|               UNKNOWN|1159221|  
 |        2010|                 PHONE| 824477|  
 |        2010|                 OTHER|  64712|  
@@ -202,61 +204,59 @@ only showing top 20 rows
 |        2022|                MOBILE| 524514|  
 |        2022|               UNKNOWN| 225139|  
 |        2022|                 OTHER|     47|  
-+------------+----------------------+-------+  
+ 
 
 
-// Question 7  
-+-------------+-------+  
+#### Question 7  ####
+  
 |borough      |count  |  
-+-------------+-------+  
+| --- | --- |  
 |MANHATTAN    |1624180|  
 |BROOKLYN     |1486861|  
 |BRONX        |1326379|  
 |QUEENS       |997733 |  
 |STATEN ISLAND|135684 |  
-+-------------+-------+  
+  
 only showing top 5 rows  
 
-+------------+------+  
+  
 |incident_zip|count |  
-+------------+------+  
+| --- | --- |  
 |10466       |237859|  
 |10031       |103588|  
 |11226       |97768 |  
 |10032       |92342 |  
 |10034       |88167 |  
-+------------+------+  
+  
 only showing top 5 rows  
 
-// Question 8  
-
-+-------------+-----+  
+#### Question 8  ####
+  
 |borough      |count|  
-+-------------+-----+  
+| --- | --- |  
 |MANHATTAN    |7096 |  
 |QUEENS       |6269 |  
 |BROOKLYN     |4311 |  
 |BRONX        |3706 |  
 |STATEN ISLAND|698  |  
-+-------------+-----+  
+  
 only showing top 5 rows  
 
-+------------+-----+  
 |incident_zip|count|  
-+------------+-----+  
+| --- | --- |  
 |10035       |2545 |  
 |11432       |1238 |  
 |10472       |672  |  
 |11213       |667  |  
 |11366       |614  |  
-+------------+-----+  
+  
 only showing top 5 rows  
 
 
-// Question 9  
-+---------------+-------+  
+#### Question 9  ####
+
 |hour_of_the_day|  count|  
-+---------------+-------+  
+| --- | --- |  
 |              0|4535542|  
 |             12|2022173|  
 |             11|1896565|  
@@ -277,15 +277,14 @@ only showing top 5 rows
 |              7| 777523|  
 |              1| 623991|  
 |              6| 446905|  
-+---------------+-------+  
+  
 only showing top 20 rows  
   
   
-// Question 10  
-
-+---------------------------------------+---------------------------+  
+#### Question 10  ####
+  
 |agency                                 |avg_resolution_time_in_days|  
-+---------------------------------------+---------------------------+  
+| --- | --- |  
 |FDNY                                   |402.1443981481481          |  
 |DPR                                    |91.80619877633934          |  
 |DOB                                    |79.55560086618235          |  
@@ -311,5 +310,5 @@ only showing top 20 rows
 |OSE                                    |0.12648533950617283        |  
 |3-1-1                                  |0.010439375414083142       |  
 |HRA                                    |6.281035374883267E-4       |  
-+---------------------------------------+---------------------------+  
+  
   
