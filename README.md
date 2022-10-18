@@ -1,8 +1,35 @@
 # bigdataprogram-applaudo
-A repository for the Big Data Program - Applaudo Studios - Valentina Jaramillo Raquejo
-Notes: The dataset that is being used for the project is https://data.cityofnewyork.us/Social-Services/311-Service-Requests-from-2010-to-Present/erm2-nwe9 . This dataset is stored in the directory dataset_test/src/main/resources/data locally.
 
-## Exploratory Data Analysis
+## Apache Spark Big Data Project
+This is a practice project to analyze a dataset through Apache Spark, creating a EDA report and finding useful insights to help create strategies or understand behaviours in the data.
+
+## 1. About the Dataset
+The dataset used, with title "311 Service Requests from 2010 to Present", was downloaded through:  https://data.cityofnewyork.us/Social-Services/311-Service-Requests-from-2010-to-Present/erm2-nwe9 
+
+It contains 31,209,470 records, and each record represents a service request to the NYC 311, this line gives access to non-emergency City services and info about City government programs. It has 41 columns, and the most characteristic ones are the following:
+
+|    Column     | Description  |
+|:---:|---|
+|  Created Date   | Date SR was created |
+|  Closed Date   | Date SR was closed by responding agency |
+|  Agency   | Acronym of responding City Government Agency |
+|  Agency Name  | Full Agency name of responding City Government Agency |
+| Complaint Type | This is the first level of a hierarchy identifying the topic of the incident or condition. Complaint Type may have a corresponding Descriptor (below) or may stand alone. |
+|     Descriptor     | This is associated to the Complaint Type, and provides further detail on the incident or condition. Descriptor values are dependent on the Complaint Type, and are not always required in SR. |
+|     Incident Zip     | Incident location zip code, provided by geo validation. |
+|     City     | City of the incident location provided by geovalidation. |
+|   Status    | Status of SR submitted |
+| Resolution Description  | Describes the last action taken on the SR by the responding agency. May describe next or future steps. |
+| Resolution Action Updated Date  | Date when responding agency last updated the SR |
+| Borough  | Provided by the submitter and confirmed by geovalidation. |
+| Open Data Channel Type | Indicates how the SR was submitted to 311. i.e. By Phone, Online, Mobile, Other or Unknown. |
+
+
+
+## 2. Exploratory Data Analysis (EDA) Report
+In process...
+
+## 3. Insights, Results and Analysis
 
 ### Questions ### 
 
