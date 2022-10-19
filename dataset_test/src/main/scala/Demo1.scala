@@ -6,10 +6,12 @@ object Demo1 extends App {
 
   val spark = SparkSession.builder()
     .appName("Demo")
-    .config("spark.master", "local")
+    .config("spark.master", "local[*]")
     .getOrCreate()
 
-    spark.sql("set spark.sql.legacy.timeParserPolicy=LEGACY")
+  spark.sql("set spark.sql.legacy.timeParserPolicy=LEGACY")
+
+
 
   val serviceRequestsSchema = StructType(Array(
     StructField("unique_key", StringType),
@@ -63,6 +65,10 @@ object Demo1 extends App {
     .option("nullValue", "")
     .csv("src/main/resources/data/311_Service_Requests_from_2010_to_Present.csv")
 
+
+  val countRows = serviceRequestsDF.count()
+
+  println(countRows)
 
   /**
    * Questions:
@@ -172,5 +178,5 @@ object Demo1 extends App {
     )
     .orderBy(col("avg_resolution_time_in_days").desc_nulls_last)
 
-  avgResolutionTimeByAgencyDF.show(60, false)
+
 }
