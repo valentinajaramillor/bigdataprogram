@@ -31,21 +31,9 @@ In process...
 
 ## 3. Insights, Results and Analysis
 
-### Questions ### 
+In process...
 
-1. Which agencies have the highest number of service requests?
-2. What are the most recurrent types of complaints in the agencies with the most service requests?
-3. Which cities have the highest number of service requests?
-4. Which boroughs have the highest number of service requests?
-5. What are the most common channels through which service requests are made?
-6. How has the channel evolved in the last years?
-7. Which are the boroughs and zipcodes that have the highest number of noise complaints?
-8. Which are the boroughs and zipcodes that have the highest number of drug activity complaints?
-9. What is the hour of the day with the most service requests?
-10. What is the average resolution time by agency?
-
-
-#### Question 1  ####
+#### 3.1. Which agencies have the highest number of service requests? ####
 
 ```scala
 +--------------------------------------------------+-------+
@@ -75,7 +63,7 @@ In process...
 
 ```
   
-#### Question 2  ####
+#### 3.2. What are the most recurrent types of complaints in the agencies with the most service requests? ####
 
 ***New York City Police Department  
 
@@ -123,7 +111,7 @@ In process...
 
 ```
   
-#### Question 3  ####
+#### 3.3. Which cities have the highest number of service requests? ####
 
 ```scala
 +-------------+-------+
@@ -138,7 +126,7 @@ In process...
 
 ``` 
 
-#### Question 4  ####
+#### 3.4. Which boroughs have the highest number of service requests? ####
 
 ```scala
 +-------------+-------+
@@ -153,7 +141,7 @@ In process...
 
 ```  
 
-#### Question 5  ####
+#### 3.5. What are the most common channels through which service requests are made? ####
 
 ```scala
 +----------------------+--------+
@@ -184,7 +172,7 @@ In process...
 ``` 
 
 
-#### Question 6  ####
+#### 3.6. How has the channel evolved in the last years? ####
   
 ```scala
 +------------+----------------------+-------+
@@ -258,7 +246,7 @@ In process...
 ``` 
 
 
-#### Question 7  ####
+#### 3.7. Which are the boroughs and zipcodes that have the highest number of noise complaints? ####
   
 ```scala
 +-------------+-------+
@@ -287,7 +275,7 @@ In process...
 
 ```  
 
-#### Question 8  ####
+#### 3.8. Which are the boroughs and zipcodes that have the highest number of drug activity complaints? ####
   
 ```scala
 +-------------+-----+
@@ -316,7 +304,7 @@ In process...
 ```  
 
 
-#### Question 9  ####
+#### 3.9. What is the hour of the day with the most service requests? ####
 
 ```scala
 +---------------+-------+
@@ -347,7 +335,7 @@ In process...
 ```   
   
   
-#### Question 10  ####
+#### 3.10. What is the average resolution time by agency? ####
   
 ```scala
 +---------------------------------------+---------------------------+
