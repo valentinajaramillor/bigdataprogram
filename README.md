@@ -6,7 +6,7 @@ This is a practice project to analyze a dataset through Apache Spark, creating a
 ## 1. About the Dataset
 The dataset used, with title "311 Service Requests from 2010 to Present", was downloaded through:  https://data.cityofnewyork.us/Social-Services/311-Service-Requests-from-2010-to-Present/erm2-nwe9 
 
-It contains 31,209,470 records, and each record represents a service request to the NYC 311, this line gives access to non-emergency City services and info about City government programs. It has 41 columns, and the most characteristic ones are the following:
+It contains 31,209,470 records, and each record represents the information about a service request made to the NYC 311. The NYC 311 line gives access to non-emergency City services and info about City government programs. The dataset has 41 columns, and the most characteristic ones are the following:
 
 |    Column     | Description  |
 |:---:|---|
@@ -29,11 +29,62 @@ It contains 31,209,470 records, and each record represents a service request to 
 ## 2. Exploratory Data Analysis (EDA) Report
 In process...
 
+### Missing data (Null Values)
+After making an inspection of the columns in the dataset, it was possible to find the following percentages of missing values in each row:
+```scala
++------------------------------+----------+----------+
+|column_name                   |null_count|percentage|
++------------------------------+----------+----------+
+|vehicle_type                  |31198792  |99.97 %   |
+|taxi_company_borough          |31185541  |99.92 %   |
+|road_ramp                     |31139214  |99.77 %   |
+|bridge_highway_direction      |31128080  |99.74 %   |
+|bridge_highway_name           |31103545  |99.66 %   |
+|bridge_highway_segment        |31099839  |99.65 %   |
+|taxi_pick_up_location         |30976913  |99.25 %   |
+|landmark                      |25986916  |83.27 %   |
+|due_date                      |22528054  |72.18 %   |
+|intersection_street_2         |21971039  |70.40 %   |
+|intersection_street_1         |21965899  |70.38 %   |
+|cross_street_2                |9867736   |31.62 %   |
+|cross_street_1                |9745527   |31.23 %   |
+|facility_type                 |9496370   |30.43 %   |
+|bbl                           |7019934   |22.49 %   |
+|location_type                 |6675010   |21.39 %   |
+|street_name                   |4923127   |15.77 %   |
+|incident_address              |4922571   |15.77 %   |
+|address_type                  |4263402   |13.66 %   |
+|longitude                     |2525247   |8.09 %    |
+|latitude                      |2525247   |8.09 %    |
+|x_coordinate                  |2525014   |8.09 %    |
+|y_coordinate                  |2524803   |8.09 %    |
+|location                      |2524731   |8.09 %    |
+|city                          |1857054   |5.95 %    |
+|incident_zip                  |1479586   |4.74 %    |
+|resolution_description        |1226977   |3.93 %    |
+|closed_date                   |881830    |2.83 %    |
+|resolution_action_updated_date|456783    |1.46 %    |
+|descriptor                    |96596     |0.31 %    |
+|borough                       |47291     |0.15 %    |
+|park_borough                  |47291     |0.15 %    |
+|community_board               |47291     |0.15 %    |
+|open_data_channel_type        |21        |0.00 %    |
+|park_facility_name            |21        |0.00 %    |
+|unique_key                    |0         |0.00 %    |
+|created_date                  |0         |0.00 %    |
+|agency                        |0         |0.00 %    |
+|complaint_type                |0         |0.00 %    |
+|agency_name                   |0         |0.00 %    |
+|status                        |0         |0.00 %    |
++------------------------------+----------+----------+
+```
+Out of 41 columns, 16 of them have less than 5% of null values, so these are the columns that are going to be used for the main insights. The rest of the columns, specifically the ones with the highest percentage of missing data, correspond to columns that give information about certain types of complaints, some of them related to vehicles or taxis (for example columns like vehicle_type with 99.97% and taxi_company_borough with 99.92%), and about specific details of the service request's address.
+
 ## 3. Insights, Results and Analysis
 
 In process...
 
-#### 3.1. Which agencies have the highest number of service requests? ####
+### 3.1. Which agencies have the highest number of service requests? ###
 
 ```scala
 +--------------------------------------------------+-------+
@@ -63,7 +114,7 @@ In process...
 
 ```
   
-#### 3.2. What are the most recurrent types of complaints in the agencies with the most service requests? ####
+### 3.2. What are the most recurrent types of complaints in the agencies with the most service requests? ###
 
 ***New York City Police Department  
 
@@ -111,7 +162,7 @@ In process...
 
 ```
   
-#### 3.3. Which cities have the highest number of service requests? ####
+### 3.3. Which cities have the highest number of service requests? ###
 
 ```scala
 +-------------+-------+
@@ -126,7 +177,7 @@ In process...
 
 ``` 
 
-#### 3.4. Which boroughs have the highest number of service requests? ####
+### 3.4. Which boroughs have the highest number of service requests? ###
 
 ```scala
 +-------------+-------+
@@ -141,7 +192,7 @@ In process...
 
 ```  
 
-#### 3.5. What are the most common channels through which service requests are made? ####
+### 3.5. What are the most common channels through which service requests are made? ###
 
 ```scala
 +----------------------+--------+
@@ -172,7 +223,7 @@ In process...
 ``` 
 
 
-#### 3.6. How has the channel evolved in the last years? ####
+### 3.6. How has the channel evolved in the last years? ###
   
 ```scala
 +------------+----------------------+-------+
@@ -246,7 +297,7 @@ In process...
 ``` 
 
 
-#### 3.7. Which are the boroughs and zipcodes that have the highest number of noise complaints? ####
+### 3.7. Which are the boroughs and zipcodes that have the highest number of noise complaints? ###
   
 ```scala
 +-------------+-------+
@@ -275,7 +326,7 @@ In process...
 
 ```  
 
-#### 3.8. Which are the boroughs and zipcodes that have the highest number of drug activity complaints? ####
+### 3.8. Which are the boroughs and zipcodes that have the highest number of drug activity complaints? ###
   
 ```scala
 +-------------+-----+
@@ -304,7 +355,7 @@ In process...
 ```  
 
 
-#### 3.9. What is the hour of the day with the most service requests? ####
+### 3.9. What is the hour of the day with the most service requests? ###
 
 ```scala
 +---------------+-------+
@@ -335,7 +386,7 @@ In process...
 ```   
   
   
-#### 3.10. What is the average resolution time by agency? ####
+### 3.10. What is the average resolution time by agency? ###
   
 ```scala
 +---------------------------------------+---------------------------+
