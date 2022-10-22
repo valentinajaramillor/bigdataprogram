@@ -1,8 +1,9 @@
-import org.apache.spark.sql.SparkSession
+import org.apache.spark.sql.{Column, SaveMode, SparkSession}
+import org.apache.spark.sql.expressions.Window
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.types._
 
-object Demo1 extends App {
+object Insights extends App {
 
   val spark = SparkSession.builder()
     .appName("Demo")
@@ -10,8 +11,6 @@ object Demo1 extends App {
     .getOrCreate()
 
   spark.sql("set spark.sql.legacy.timeParserPolicy=LEGACY")
-
-
 
   val serviceRequestsSchema = StructType(Array(
     StructField("unique_key", StringType),
@@ -57,18 +56,70 @@ object Demo1 extends App {
     StructField("location", StringType)
   ))
 
+  // Reading the dataset from the parquet file to a DataFrame
   val serviceRequestsDF = spark.read
     .schema(serviceRequestsSchema)
     .option("timestampFormat", "MM/dd/YYYY hh:mm:ss aa")
-    .option("header", "true")
-    .option("sep", ",")
-    .option("nullValue", "")
-    .csv("src/main/resources/data/311_Service_Requests_from_2010_to_Present.csv")
+    .parquet("src/main/resources/data/311_Service_Requests_from_2010_to_Present")
+
+  // Creating a new format for the percentages
+  val percentageFormat: Column => Column = (number:Column) => concat(format_number(number*100,2),lit(" %"))
+
+  // Counting the total amount of rows in the dataframe
+  val totalRows = serviceRequestsDF.count()
+
+  // Inspecting missing values
+  def countNullsCols(columns: Array[String]): Array[Column] = {
+    columns.map(c => {
+      count(when(col(c).isNull, c)).alias(c)
+    })
+  }
+
+  val cols = Seq("unique_key", "created_date", "closed_date", "agency", "agency_name",
+    "complaint_type", "descriptor", "location_type", "incident_zip", "incident_address",
+    "street_name", "cross_street_1", "cross_street_2" ,"intersection_street_1", "intersection_street_2",
+    "address_type", "city", "landmark", "facility_type" , "status", "due_date", "resolution_description",
+    "resolution_action_updated_date", "community_board", "bbl", "borough", "x_coordinate", "y_coordinate",
+    "open_data_channel_type","park_facility_name","park_borough","vehicle_type","taxi_company_borough",
+    "taxi_pick_up_location","bridge_highway_name","bridge_highway_direction","road_ramp",
+    "bridge_highway_segment","latitude","longitude","location")
+
+  import org.apache.spark.sql.{functions => func, _}
+
+  val nullStatsDF = serviceRequestsDF.select(
+    countNullsCols(serviceRequestsDF.columns): _*)
+    .select(
+      func.explode(
+        func.array(
+          cols.map(
+            col =>
+              func.struct(
+                func.lit(col).alias("column_name"),
+                func.col(col).alias("null_count")
+              )
+          ): _*)
+      ).alias("v")
+    )
+    .selectExpr("v.*")
+    .withColumn("percentage", percentageFormat(col("null_count") / totalRows))
+    .orderBy(col("null_count").desc)
+
+  // nullStatsDF.show(41, false)
+
+  // Find outliers in representative columns
+  val countChannelOutliers = serviceRequestsDF
+    .where(
+      col("open_data_channel_type") =!= "PHONE" and
+        col("open_data_channel_type") =!= "ONLINE" and
+        col("open_data_channel_type") =!= "MOBILE" and
+        col("open_data_channel_type") =!= "UNKNOWN" and
+        col("open_data_channel_type") =!= "OTHER")
+    .count()
+
+  println(countChannelOutliers)
+  println((countChannelOutliers.toDouble/totalRows.toDouble)*100)
 
 
-  val countRows = serviceRequestsDF.count()
-
-  println(countRows)
 
   /**
    * Questions:
@@ -84,6 +135,7 @@ object Demo1 extends App {
    * 9. What is the hour of the day with the most service requests?
    * 10. What is the average resolution time by agency?
    */
+  import org.apache.spark.sql.functions._
 
   // Question 1
   val serviceRequestsByAgencyDF = serviceRequestsDF
@@ -101,6 +153,26 @@ object Demo1 extends App {
   val serviceRequestsPoliceByComplaintDF = serviceRequestsByAgencyByComplaintDF("New York City Police Department")
   val serviceRequestsHousingByComplaintDF = serviceRequestsByAgencyByComplaintDF("Department of Housing Preservation and Development")
   val serviceRequestsTransportationByComplaintDF = serviceRequestsByAgencyByComplaintDF("Department of Transportation")
+
+  val wAgency = Window.partitionBy("agency_name")
+
+  val df = serviceRequestsDF
+    .withColumn(
+      "count_service_requests",
+      count(lit(1)).over(wAgency)
+    )
+    .withColumn(
+      "rank",
+      dense_rank().over(Window.orderBy(col("count_service_requests").desc))
+    )
+    .select(
+      col("agency_name"),
+      col("count_service_requests"),
+      col("rank")
+    )
+    .distinct()
+    .orderBy(col("rank"))
+
 
   // Question 3
   val serviceRequestsByCityDF = serviceRequestsDF
