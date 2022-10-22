@@ -27,9 +27,60 @@ It contains 31,209,470 records, and each record represents the information about
 
 
 ## 2. Exploratory Data Analysis (EDA) Report
+
 In process...
 
-### Missing data (Null Values)
+### 2.1. Formatting
+To improve the readability of the column names, the format was changed by removing the whitespaces and replacing the uppercase letters to lowercase. For example, "Created Date" was replaced by "created_date". These changes were introduced in the schema definition for the DataFrame: 
+
+```scala
+  val serviceRequestsSchema = StructType(Array(
+    StructField("unique_key", StringType),
+    StructField("created_date", TimestampType),
+    StructField("closed_date", TimestampType),
+    StructField("agency", StringType),
+    StructField("agency_name", StringType),
+    StructField("complaint_type", StringType),
+    StructField("descriptor", StringType),
+    StructField("location_type", StringType),
+    StructField("incident_zip", StringType),
+    StructField("incident_address", StringType),
+    StructField("street_name", StringType),
+    StructField("cross_street_1", StringType),
+    StructField("cross_street_2", StringType),
+    StructField("intersection_street_1", StringType),
+    StructField("intersection_street_2", StringType),
+    StructField("address_type", StringType),
+    StructField("city", StringType),
+    StructField("landmark", StringType),
+    StructField("facility_type", StringType),
+    StructField("status", StringType),
+    StructField("due_date", TimestampType),
+    StructField("resolution_description", StringType),
+    StructField("resolution_action_updated_date", TimestampType),
+    StructField("community_board", StringType),
+    StructField("bbl", StringType),
+    StructField("borough", StringType),
+    StructField("x_coordinate", DoubleType),
+    StructField("y_coordinate", DoubleType),
+    StructField("open_data_channel_type", StringType),
+    StructField("park_facility_name", StringType),
+    StructField("park_borough", StringType),
+    StructField("vehicle_type", StringType),
+    StructField("taxi_company_borough", StringType),
+    StructField("taxi_pick_up_location", StringType),
+    StructField("bridge_highway_name", StringType),
+    StructField("bridge_highway_direction", StringType),
+    StructField("road_ramp", StringType),
+    StructField("bridge_highway_segment", StringType),
+    StructField("latitude", DoubleType),
+    StructField("longitude", DoubleType),
+    StructField("location", StringType)
+  ))
+```
+After specifying a schema for the DataFrame, it was required to read the dataset, that was in CSV format initially, but to improve the performance of the application it is preferred to have the dataset in Parquet format, so this is another transformation that will be performed to the dataset.
+
+### 2.2. Missing data (Null Values)
 After making an inspection of the columns in the dataset, it was possible to find the following percentages of missing values in each row:
 ```scala
 +------------------------------+----------+----------+
@@ -78,7 +129,10 @@ After making an inspection of the columns in the dataset, it was possible to fin
 |status                        |0         |0.00 %    |
 +------------------------------+----------+----------+
 ```
-Out of 41 columns, 16 of them have less than 5% of null values, so these are the columns that are going to be used for the main insights. The rest of the columns, specifically the ones with the highest percentage of missing data, correspond to columns that give information about certain types of complaints, some of them related to vehicles or taxis (for example columns like vehicle_type with 99.97% and taxi_company_borough with 99.92%), and about specific details of the service request's address.
+Out of 41 columns, 16 of them have less than 5% of null values, so these are the columns that are going to be used for the main insights. The rest of the columns, specifically the ones with the highest percentage of missing data, correspond to columns that give information about certain types of complaints, some of them related to vehicles or taxis (for example columns like vehicle_type with 99.97% and taxi_company_borough with 99.92%), and about specific details of the service request's address. 
+
+### 2.3. Outliers and inaccurate data
+In the column "open_data_channel_type", there were 516 rows (0.165%) with channels of service request different to: "PHONE", "ONLINE", "MOBILE", "UNKNOWN" or "OTHER". As these are the channels known and specified by the data source, the rows with other channels correspond to inaccurate data, so they were removed before obtaining the reports and insights.
 
 ## 3. Insights, Results and Analysis
 
