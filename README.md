@@ -25,10 +25,7 @@ It contains 31,209,470 records, and each record represents the information about
 | Open Data Channel Type | Indicates how the SR was submitted to 311. i.e. By Phone, Online, Mobile, Other or Unknown. |
 
 
-
 ## 2. Exploratory Data Analysis (EDA) Report
-
-In process...
 
 ### 2.1. Formatting
 To improve the readability of the column names, the format was changed by removing the whitespaces and replacing the uppercase letters to lowercase. For example, "Created Date" was replaced by "created_date". These changes were introduced in the schema definition for the DataFrame: 
@@ -81,7 +78,8 @@ To improve the readability of the column names, the format was changed by removi
 After specifying a schema for the DataFrame, it was required to read the dataset, that was in CSV format initially, but to improve the performance of the application it is preferred to have the dataset in Parquet format, so this is another transformation that will be performed to the dataset.
 
 ### 2.2. Missing data (Null Values)
-After making an inspection of the columns in the dataset, it was possible to find the following percentages of missing values in each row:
+After making an inspection of the columns in the dataset, it was possible to find the following percentages of missing values:
+
 ```scala
 +------------------------------+----------+----------+
 |column_name                   |null_count|percentage|
@@ -129,46 +127,58 @@ After making an inspection of the columns in the dataset, it was possible to fin
 |status                        |0         |0.00 %    |
 +------------------------------+----------+----------+
 ```
-Out of 41 columns, 16 of them have less than 5% of null values, so these are the columns that are going to be used for the main insights. The rest of the columns, specifically the ones with the highest percentage of missing data, correspond to columns that give information about certain types of complaints, some of them related to vehicles or taxis (for example columns like vehicle_type with 99.97% and taxi_company_borough with 99.92%), and about specific details of the service request's address. 
+
+Out of 41 columns, 16 of them have less than 5% of null values, so these are the columns that are going to be used for the main insights. The rest of the columns, specifically the ones with the highest percentage of missing data, correspond to columns that give information about certain types of complaints, some of them related to vehicles or taxis (for example columns like vehicle_type with 99.97% nulls and taxi_company_borough with 99.92% nulls), and about specific details of the service request's address.
+
+The columns with more than 10% of missing values were removed, as these columns are not useful for the future insights in this project. The remaining columns of type string had the null values replaced by "Unspecified".
 
 ### 2.3. Outliers and inaccurate data
-In the column "open_data_channel_type", there were 516 rows (0.165%) with channels of service request different to: "PHONE", "ONLINE", "MOBILE", "UNKNOWN" or "OTHER". As these are the channels known and specified by the data source, the rows with other channels correspond to inaccurate data, so they were removed before obtaining the reports and insights.
+
+After inspecting the columns, it was possible to find that in the column "open_data_channel_type", there were 516 rows (0.165%) with channels of service request different to: "PHONE", "ONLINE", "MOBILE", "UNKNOWN" or "OTHER". As these are the channel types known and specified by the data source, the rows with other channels correspond to inaccurate data, so they were removed before obtaining the reports and insights.
 
 ## 3. Insights, Results and Analysis
 
 In process...
 
-### 3.1. Which agencies have the highest number of service requests? ###
+### 3.1. What agencies have the highest number of service requests? 
 
 ```scala
-+--------------------------------------------------+-------+
-|agency_name                                       |count  |
-+--------------------------------------------------+-------+
-|New York City Police Department                   |8943589|
-|Department of Housing Preservation and Development|7421521|
-|Department of Transportation                      |3680622|
-|Department of Sanitation                          |3644155|
-|Department of Environmental Protection            |2176187|
-|Department of Buildings                           |1419574|
-|Department of Parks and Recreation                |1320413|
-|Department of Health and Mental Hygiene           |766883 |
-|Taxi and Limousine Commission                     |314378 |
-|Department of Consumer Affairs                    |268304 |
-|Department of Homeless Services                   |140381 |
-|HRA Benefit Card Replacement                      |113953 |
-|Correspondence Unit                               |90381  |
-|Department for the Aging                          |89570  |
-|Senior Citizen Rent Increase Exemption Unit       |87622  |
-|Refunds and Adjustments                           |82998  |
-|Operations Unit - Department of Homeless Services |79372  |
-|DHS Advantage Programs                            |73021  |
-|Mayorâs Office of Special Enforcement           |70955  |
-|Economic Development Corporation                  |66636  |
-+--------------------------------------------------+-------+
++--------------------------------------------------+----------------------+----------+
+|agency_name                                       |count_service_requests|percentage|
++--------------------------------------------------+----------------------+----------+
+|New York City Police Department                   |8943589               |28.66 %   |
+|Department of Housing Preservation and Development|7421521               |23.78 %   |
+|Department of Transportation                      |3680622               |11.79 %   |
+|Department of Sanitation                          |3644155               |11.68 %   |
+|Department of Environmental Protection            |2175650               |6.97 %    |
+|Department of Buildings                           |1419574               |4.55 %    |
+|Department of Parks and Recreation                |1320413               |4.23 %    |
+|Department of Health and Mental Hygiene           |766883                |2.46 %    |
+|Taxi and Limousine Commission                     |314378                |1.01 %    |
+|Department of Consumer Affairs                    |268304                |0.86 %    |
++--------------------------------------------------+----------------------+----------+
+```
 
+The report shows the 10 agencies with the most service requests made to the NYC 311, and the percentage of this count from the total amount of service requests. This report is useful to identify the agencies which need special attention or a bigger channel of communication and response for the public. 
+
+**Code**
+
+```scala
+  // Question 1
+  // Find the number of service requests by agency, and get the percentage of this amount from the total number of rows
+    val serviceRequestsByAgencyDF = cleanedServiceRequestsDF
+    .groupBy(col("agency_name"))
+    .agg(
+      count("*").as("count_service_requests")
+    )
+    .withColumn(
+      "percentage", percentageFormat(col("count_service_requests") / totalRows)
+    )
+    .orderBy(col("count_service_requests").desc_nulls_last)
+    .limit(10)
 ```
   
-### 3.2. What are the most recurrent types of complaints in the agencies with the most service requests? ###
+### 3.2. What are the most recurrent types of complaints in the agencies with the most service requests?
 
 ***New York City Police Department  
 
