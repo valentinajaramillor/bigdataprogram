@@ -393,7 +393,7 @@ The report presents the different types of channels through which the service re
 
 ```
 
-The report displays the evolution of the number of SR by channel type over the years. By knowing how the number of SR by channel type increase over the years, it is possible to predict which channels will be preferred by the public in the future, and thus increase channel capacity.
+The report displays the evolution of the number of SR by channel type over the years. By knowing how the number of SR by channel type increases over the years, it is possible to predict which channels will be preferred by the public in the future, and thus increase channel capacity.
 
 **Code**
 
@@ -432,7 +432,7 @@ The report displays the evolution of the number of SR by channel type over the y
     .orderBy(col("year"), col("count_SR_by_year/channel").desc)
 ```
 
-### 3.7. Which are the boroughs and zipcodes that have the highest number of noise complaints? ###
+### 3.6. Which are the boroughs and zipcodes that have the highest number of noise complaints? ###
   
 ```scala
 +-------------+-------+
@@ -461,7 +461,7 @@ The report displays the evolution of the number of SR by channel type over the y
 
 ```  
 
-### 3.8. Which are the boroughs and zipcodes that have the highest number of drug activity complaints? ###
+### 3.7. Which are the boroughs and zipcodes that have the highest number of drug activity complaints? ###
   
 ```scala
 +-------------+-----+
@@ -490,7 +490,7 @@ The report displays the evolution of the number of SR by channel type over the y
 ```  
 
 
-### 3.9. What is the hour of the day with the most service requests? ###
+### 3.8. What is the hour of the day with the most service requests? ###
 
 ```scala
 +---------------+-------+
@@ -521,7 +521,7 @@ The report displays the evolution of the number of SR by channel type over the y
 ```   
   
   
-### 3.10. What is the average resolution time by agency? ###
+### 3.9. What is the average resolution time by agency? ###
   
 ```scala
 +---------------------------------------+---------------------------+
