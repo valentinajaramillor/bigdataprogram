@@ -138,8 +138,6 @@ After inspecting the columns, it was possible to find that in the column "open_d
 
 ## 3. Insights, Results and Analysis
 
-In process...
-
 ### 3.1. What agencies have the highest number of service requests? 
 
 ```scala
@@ -597,39 +595,76 @@ The report is ordered from the hours with the highest number of service requests
     .orderBy(col("count_SR_by_hour").desc)
 ```
 
-### 3.8. What is the average resolution time by agency? ###
+### 3.8. What is the average resolution time by agency?
   
 ```scala
-+---------------------------------------+---------------------------+
-|agency                                 |avg_resolution_time_in_days|
-+---------------------------------------+---------------------------+
-|FDNY                                   |402.1443981481481          |
-|DPR                                    |91.80619877633934          |
-|DOB                                    |79.55560086618235          |
-|TLC                                    |72.34416505093907          |
-|EDC                                    |61.99349087209839          |
-|DOE                                    |58.7220819186892           |
-|DOITT                                  |28.759503091629163         |
-|OFFICE OF TECHNOLOGY AND INNOVATION    |22.499034288194444         |
-|DCA                                    |21.78509000448973          |
-|DOHMH                                  |20.072018912219            |
-|DOT                                    |13.75357668500991          |
-|NYCEM                                  |13.64512206574749          |
-|HPD                                    |13.295751961811682         |
-|MAYORâS OFFICE OF SPECIAL ENFORCEMENT|10.272963081209197         |
-|DSNY                                   |9.240251102860649          |
-|DEP                                    |8.211337005506733          |
-|DOF                                    |7.375863857895153          |
-|DFTA                                   |5.7700290651236985         |
-|DORIS                                  |3.549078047263682          |
-|DHS                                    |1.3539195857965487         |
-|ACS                                    |0.9500694444444444         |
-|NYPD                                   |0.2864826985184468         |
-|OSE                                    |0.12648533950617283        |
-|3-1-1                                  |0.010439375414083142       |
-|HRA                                    |6.281035374883267E-4       |
-+---------------------------------------+---------------------------+
++---------------------------------------+--------+---------+---------+--------+---------------+
+|agency_acronym                         |avg_time|max_time |min_time |stddev  |coefficient_var|
++---------------------------------------+--------+---------+---------+--------+---------------+
+|DPR                                    |91.8062 |2102.7183|Undefined|195.9294|2.13           |
+|DOB                                    |79.5556 |4637.4092|0.0      |236.8871|2.98           |
+|TLC                                    |72.3442 |3317.2641|0.0      |246.4573|3.41           |
+|EDC                                    |61.9935 |943.9973 |0.0      |113.1057|1.82           |
+|DCA                                    |21.7851 |1306.6651|0.0024   |73.8285 |3.39           |
+|DOT                                    |13.7536 |3276.0903|Undefined|67.9973 |4.94           |
+|NYCEM                                  |13.6451 |297.0237 |0.0      |15.7726 |1.16           |
+|HPD                                    |13.2958 |4433.5569|0.0      |34.0229 |2.56           |
+|MAYORâS OFFICE OF SPECIAL ENFORCEMENT|10.273  |126.8133 |1.0E-4   |20.0178 |1.95           |
+|DOF                                    |7.3759  |596.1037 |9.0E-4   |16.1308 |2.19           |
+|DORIS                                  |3.5491  |16.2923  |0.059    |4.1489  |1.17           |
+|ACS                                    |0.9501  |0.9501   |0.9501   |NaN     |NaN            |
+|NYPD                                   |0.2865  |1093.9978|Undefined|6.7255  |23.47          |
+|3-1-1                                  |0.0104  |192.9932 |0.0      |1.3456  |129.38         |
+|HRA                                    |6.0E-4  |1.2278   |0.0      |0.0045  |7.5            |
++---------------------------------------+--------+---------+---------+--------+---------------+
 
 ```   
-  
-  
+This table provides measures of variability for the resolution time in days by agency, for the 15 agencies with the highest average resolution time. This information can be used to identify the agencies that have the highest resolution times, and create improvement plans to reduce these measures.
+
+**Code**
+
+```scala
+    // Question 8
+  // Find the agencies with the highest average resolution times, and some variability measures
+  // First, create the window function partitioned by agency
+  val wAgencyAcronym = Window.partitionBy("agency")
+
+  // Filter by the service requests that are closed, and measure the resolution time of each service request
+  // Find the average, max, min, stddev and coefficient of variation
+  val avgResolutionTimeByAgencyDF = cleanedServiceRequestsDF
+    .where(col("status") === "Closed")
+    .withColumn("resolution_time_days",
+      round((col("closed_date").cast("long") -
+        col("created_date").cast("long")) / 86400,4)
+    )
+    .withColumn("avg_time",
+      round(avg(col("resolution_time_days")).over(wAgencyAcronym),4)
+    )
+    .withColumn("max_time",
+      round(max(col("resolution_time_days")).over(wAgencyAcronym),4)
+    )
+    .withColumn("min_time",
+      when(round(min(col("resolution_time_days")).over(wAgencyAcronym),4) < 0, "Undefined")
+        .otherwise(round(min(col("resolution_time_days")).over(wAgencyAcronym),4))
+    )
+    .withColumn("stddev",
+      round(stddev(col("resolution_time_days")).over(wAgencyAcronym),4)
+    )
+    .withColumn("coefficient_var",
+      round(col("stddev") / col("avg_time"),2)
+    )
+    // Select the required columns for the report
+    .select(
+      col("agency").as("agency_acronym"),
+      col("avg_time"),
+      col("max_time"),
+      col("min_time"),
+      col("stddev"),
+      col("coefficient_var")
+    )
+    .distinct()
+    .na.fill("Undefined", Seq("avg_time","max_time","min_time","stddev","coefficient_var"))
+    .limit(15)
+    .orderBy(col("avg_time").desc)
+    
+ ```
