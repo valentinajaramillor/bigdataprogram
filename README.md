@@ -286,7 +286,7 @@ The report gives information about the amount of SR per borough, with the percen
     .orderBy(col("count_service_requests").desc)
 ```
 
-### 3.4. What are the most common channels through which service requests are made? ###
+### 3.4. What are the most common channels through which service requests are made? 
 
 ```scala
 +----------------------+----------------------+----------+
@@ -432,96 +432,172 @@ The report displays the evolution of the number of SR by channel type over the y
     .orderBy(col("year"), col("count_SR_by_year/channel").desc)
 ```
 
-### 3.6. Which are the boroughs and zipcodes that have the highest number of noise complaints? ###
+### 3.6. What are the boroughs and zipcodes that have the highest number of the most recurrent complaint types?
   
 ```scala
-+-------------+-------+
-|borough      |count  |
-+-------------+-------+
-|MANHATTAN    |1624180|
-|BROOKLYN     |1486861|
-|BRONX        |1326379|
-|QUEENS       |997733 |
-|STATEN ISLAND|135684 |
-+-------------+-------+
++-------------------+-------------+------------+---------------------+-----------------------------+-----------------------+
+|complaint_type     |borough      |incident_zip|count_SR_by_complaint|count_SR_by_complaint/zipcode|percentage_in_complaint|
++-------------------+-------------+------------+---------------------+-----------------------------+-----------------------+
+|Noise - Residential|BRONX        |10466       |2886923              |224547                       |7.78 %                 |
+|Noise - Residential|BRONX        |10467       |2886923              |59960                        |2.08 %                 |
+|Noise - Residential|BROOKLYN     |11226       |2886923              |58539                        |2.03 %                 |
+|HEAT/HOT WATER     |BROOKLYN     |11226       |1750911              |58545                        |3.34 %                 |
+|HEAT/HOT WATER     |BRONX        |10458       |1750911              |53976                        |3.08 %                 |
+|HEAT/HOT WATER     |BRONX        |10467       |1750911              |52422                        |2.99 %                 |
+|Illegal Parking    |QUEENS       |11385       |1728819              |49164                        |2.84 %                 |
+|Illegal Parking    |BROOKLYN     |11385       |1728819              |49164                        |2.84 %                 |
+|Illegal Parking    |BROOKLYN     |11204       |1728819              |29969                        |1.73 %                 |
+|Illegal Parking    |BROOKLYN     |11214       |1728819              |28932                        |1.67 %                 |
+|Blocked Driveway   |QUEENS       |11368       |1304735              |42828                        |3.28 %                 |
+|Blocked Driveway   |QUEENS       |11385       |1304735              |31525                        |2.42 %                 |
+|Blocked Driveway   |BROOKLYN     |11385       |1304735              |31525                        |2.42 %                 |
+|Blocked Driveway   |BROOKLYN     |11236       |1304735              |27059                        |2.07 %                 |
+|Street Condition   |STATEN ISLAND|10314       |1097396              |24224                        |2.21 %                 |
+|Street Condition   |STATEN ISLAND|10306       |1097396              |20138                        |1.84 %                 |
+|Street Condition   |STATEN ISLAND|10312       |1097396              |19529                        |1.78 %                 |
++-------------------+-------------+------------+---------------------+-----------------------------+-----------------------+
 
 ```
 
-  
-```scala
-+------------+------+
-|incident_zip|count |
-+------------+------+
-|10466       |237859|
-|10031       |103588|
-|11226       |97768 |
-|10032       |92342 |
-|10034       |88167 |
-+------------+------+
+The report shows the most recurrent complaint types, and the boroughs and zipcodes where they happen the most. This table is useful to focus the strategies in certain locations to prevent the incidents that citizens report most frequently.
 
-```  
+**Code**
 
-### 3.7. Which are the boroughs and zipcodes that have the highest number of drug activity complaints? ###
-  
 ```scala
-+-------------+-----+
-|borough      |count|
-+-------------+-----+
-|MANHATTAN    |7096 |
-|QUEENS       |6269 |
-|BROOKLYN     |4311 |
-|BRONX        |3706 |
-|STATEN ISLAND|698  |
-+-------------+-----+
+    // Question 6
+  // Find the most recurrent complaint types and the zipcodes where they happen the most
+
+  // Create the Window functions partitioned by complaint type and by complaint type and incident zip
+  val wComplaint = Window.partitionBy("complaint_type")
+  val wComplaintAndZipcode = Window.partitionBy("complaint_type", "incident_zip")
+
+  // Filter to exclude the unspecified zips and borough
+  // Count service requests by complaint type and by complaint type and incident zip, and create ranks based on that
+  val zipcodesByComplaintDF = cleanedServiceRequestsDF
+    .where(col("incident_zip") =!= "Unspecified" and
+      col("borough") =!= "Unspecified")
+    .withColumn(
+      "count_SR_by_complaint",
+      count(lit(1)).over(wComplaint)
+    )
+    .withColumn(
+      "count_SR_by_complaint/zipcode",
+      count(lit(1)).over(wComplaintAndZipcode)
+    )
+    .withColumn(
+      "rank_complaint",
+      dense_rank().over(Window.orderBy(col("count_SR_by_complaint").desc))
+    )
+    .withColumn(
+      "rank_zipcode",
+      dense_rank().over(wComplaint.orderBy(col("count_SR_by_complaint/zipcode").desc))
+    )
+    // Filter by the zipcodes and complaints with more service requests
+    .where(
+      (col("rank_zipcode") <= 3) and
+        (col("rank_complaint") <= 5)
+    )
+    .withColumn(
+      "percentage_in_complaint", percentageFormat(col("count_SR_by_complaint/zipcode") / col("count_SR_by_complaint"))
+    )
+    // Select the required columns for the report
+    .select(
+      col("complaint_type"),
+      col("borough"),
+      col("incident_zip"),
+      col("count_SR_by_complaint"),
+      col("count_SR_by_complaint/zipcode"),
+      col("percentage_in_complaint")
+    )
+    .distinct()
+    .orderBy(col("count_SR_by_complaint").desc, col("count_SR_by_complaint/zipcode").desc)
+```
+
+
+### 3.7. What are the hours of the day with the most service requests and the most recurrent complaint type in those hours? 
+
+
+```scala
++----+------------------------+----------------+--------------------------+---------------+
+|hour|recurrent_complaint_type|count_SR_by_hour|count_SR_by_hour/complaint|percentage_hour|
++----+------------------------+----------------+--------------------------+---------------+
+|0   |HEATING                 |4535532         |887836                    |14.53 %        |
+|12  |Derelict Vehicles       |2022136         |323132                    |6.48 %         |
+|11  |Street Light Condition  |1896533         |171674                    |6.08 %         |
+|10  |Street Light Condition  |1892084         |172372                    |6.06 %         |
+|9   |Street Light Condition  |1742452         |116162                    |5.58 %         |
+|14  |Street Condition        |1729392         |120752                    |5.54 %         |
+|13  |Street Condition        |1702601         |91412                     |5.46 %         |
+|15  |Street Condition        |1621149         |93369                     |5.19 %         |
+|16  |Noise - Residential     |1485974         |82764                     |4.76 %         |
+|8   |Illegal Parking         |1279304         |106613                    |4.10 %         |
+|17  |Noise - Residential     |1257331         |96098                     |4.03 %         |
+|22  |Noise - Residential     |1243115         |321054                    |3.98 %         |
+|18  |Noise - Residential     |1197350         |116593                    |3.84 %         |
+|21  |Noise - Residential     |1185247         |231788                    |3.80 %         |
+|23  |Noise - Residential     |1139298         |351562                    |3.65 %         |
+|19  |Noise - Residential     |1135445         |143628                    |3.64 %         |
+|20  |Noise - Residential     |1123556         |180108                    |3.60 %         |
+|7   |Illegal Parking         |777515          |88217                     |2.49 %         |
+|1   |Noise - Residential     |623982          |220045                    |2.00 %         |
+|6   |Illegal Parking         |446899          |50576                     |1.43 %         |
+|2   |Noise - Residential     |414182          |140980                    |1.33 %         |
+|3   |Noise - Residential     |280216          |92042                     |0.90 %         |
+|5   |Noise - Residential     |247326          |43442                     |0.79 %         |
+|4   |Noise - Residential     |230314          |61690                     |0.74 %         |
++----+------------------------+----------------+--------------------------+---------------+
 
 ```   
 
-```scala
-+------------+-----+
-|incident_zip|count|
-+------------+-----+
-|10035       |2545 |
-|11432       |1238 |
-|10472       |672  |
-|11213       |667  |
-|11366       |614  |
-+------------+-----+
+The report is ordered from the hours with the highest number of service requests and the most recurrent complaint type in that hour. There is an increase in the number of service requests around midnight and in the morning, so the responding agencies and the NYC 311 have to make sure that there are enough agents to answer the requests in the most busy hours.
 
-```  
-
-
-### 3.8. What is the hour of the day with the most service requests? ###
+**Code**
 
 ```scala
-+---------------+-------+
-|hour_of_the_day|  count|
-+---------------+-------+
-|              0|4535542|
-|             12|2022173|
-|             11|1896565|
-|             10|1892119|
-|              9|1742475|
-|             14|1729441|
-|             13|1702627|
-|             15|1621200|
-|             16|1486015|
-|              8|1279326|
-|             17|1257361|
-|             22|1243140|
-|             18|1197381|
-|             21|1185272|
-|             23|1139315|
-|             19|1135469|
-|             20|1123580|
-|              7| 777523|
-|              1| 623991|
-|              6| 446905|
-+---------------+-------+
+  // Question 7
 
-```   
-  
-  
-### 3.9. What is the average resolution time by agency? ###
+  // Create the Window functions partitioned by hour and by hour and complaint type
+  val wHour = Window.partitionBy("hour")
+  val wHourAndComplaint = Window.partitionBy("hour", "complaint_type")
+
+  // Filter to exclude the unspecified complaint types
+  // Count service requests by hour and by hour and complaint type, and create ranks based on that
+  val serviceRequestsByHourDF = cleanedServiceRequestsDF
+    .where(col("complaint_type") =!= "Unspecified")
+    .withColumn(
+      "hour",
+      hour(col("created_date"))
+    )
+    .withColumn(
+      "count_SR_by_hour",
+      count(lit(1)).over(wHour)
+    )
+    .withColumn(
+      "count_SR_by_hour/complaint",
+      count(lit(1)).over(wHourAndComplaint)
+    )
+    .withColumn(
+      "rank_complaint",
+      dense_rank().over(wHour.orderBy(col("count_SR_by_hour/complaint").desc))
+    )
+    // Filter by the most recurrent complaint type in each hour
+    .where(col("rank_complaint") === 1)
+    .withColumn(
+      "percentage_hour", percentageFormat(col("count_SR_by_hour") / totalRows)
+    )
+    // Select the required columns for the report
+    .select(
+      col("hour"),
+      col("complaint_type").as("recurrent_complaint_type"),
+      col("count_SR_by_hour"),
+      col("count_SR_by_hour/complaint"),
+      col("percentage_hour"),
+    )
+    .distinct()
+    .orderBy(col("count_SR_by_hour").desc)
+```
+
+### 3.8. What is the average resolution time by agency? ###
   
 ```scala
 +---------------------------------------+---------------------------+
