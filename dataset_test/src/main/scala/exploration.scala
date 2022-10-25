@@ -6,8 +6,12 @@ import org.apache.spark.sql.types._
 object exploration extends App {
 
   val spark = SparkSession.builder()
-    .appName("Demo")
-    .config("spark.master", "local[*]")
+    .appName("exploration")
+    .master("local[*]")
+    .config("spark.executor.memory", "70g")
+    .config("spark.driver.memory", "50g")
+    .config("spark.memory.offHeap.enabled", true)
+    .config("spark.memory.offHeap.size", "16g")
     .getOrCreate()
 
   spark.sql("set spark.sql.legacy.timeParserPolicy=LEGACY")
@@ -198,16 +202,6 @@ object exploration extends App {
 
   // Question 2
 
-  //def serviceRequestsByAgencyByComplaintDF(agencyName: String) = cleanedServiceRequestsDF
-  //  .where(col("agency_name") === agencyName)
-  //  .groupBy(col("complaint_type"))
-  //  .agg(count("*").as("count"))
-  //  .orderBy(col("count").desc_nulls_last)
-
-  //val serviceRequestsPoliceByComplaintDF = serviceRequestsByAgencyByComplaintDF("New York City Police Department")
-  //val serviceRequestsHousingByComplaintDF = serviceRequestsByAgencyByComplaintDF("Department of Housing Preservation and Development")
-  //val serviceRequestsTransportationByComplaintDF = serviceRequestsByAgencyByComplaintDF("Department of Transportation")
-
   // Create the Window functions partitioned by agency and by agency and complaint type
   val wAgency = Window.partitionBy("agency_name")
   val wAgencyAndComplaint = Window.partitionBy("agency_name", "complaint_type")
@@ -277,7 +271,6 @@ object exploration extends App {
     )
     .orderBy(col("count_service_requests").desc)
 
-  serviceRequestsByChannelDF.show()
 
   // Question 5
   // Create the window functions partitioned by year and by year and channel
@@ -314,47 +307,138 @@ object exploration extends App {
 
 
   // Question 6
-  val noiseComplaintsByBoroughDF = cleanedServiceRequestsDF
-    .where(col("complaint_type").contains("Noise"))
-    .groupBy(col("borough"))
-    .agg(count("*").as("count"))
-    .orderBy(col("count").desc_nulls_last)
+  // Find the most recurrent complaint types and the zipcodes where they happen the most
 
-  val noiseComplaintsByZipcodeDF = serviceRequestsDF
-    .where(col("complaint_type").contains("Noise"))
-    .groupBy(col("incident_zip"))
-    .agg(count("*").as("count"))
-    .orderBy(col("count").desc_nulls_last)
+  // Create the Window functions partitioned by complaint type and by complaint type and incident zip
+  val wComplaint = Window.partitionBy("complaint_type")
+  val wComplaintAndZipcode = Window.partitionBy("complaint_type", "incident_zip")
+
+  // Filter to exclude the unspecified zips and borough
+  // Count service requests by complaint type and by complaint type and incident zip, and create ranks based on that
+  val zipcodesByComplaintDF = cleanedServiceRequestsDF
+    .where(col("incident_zip") =!= "Unspecified" and
+      col("borough") =!= "Unspecified")
+    .withColumn(
+      "count_SR_by_complaint",
+      count(lit(1)).over(wComplaint)
+    )
+    .withColumn(
+      "count_SR_by_complaint/zipcode",
+      count(lit(1)).over(wComplaintAndZipcode)
+    )
+    .withColumn(
+      "rank_complaint",
+      dense_rank().over(Window.orderBy(col("count_SR_by_complaint").desc))
+    )
+    .withColumn(
+      "rank_zipcode",
+      dense_rank().over(wComplaint.orderBy(col("count_SR_by_complaint/zipcode").desc))
+    )
+    // Filter by the zipcodes and complaints with more service requests
+    .where(
+      (col("rank_zipcode") <= 3) and
+        (col("rank_complaint") <= 5)
+    )
+    .withColumn(
+      "percentage_in_complaint", percentageFormat(col("count_SR_by_complaint/zipcode") / col("count_SR_by_complaint"))
+    )
+    // Select the required columns for the report
+    .select(
+      col("complaint_type"),
+      col("borough"),
+      col("incident_zip"),
+      col("count_SR_by_complaint"),
+      col("count_SR_by_complaint/zipcode"),
+      col("percentage_in_complaint")
+    )
+    .distinct()
+    .orderBy(col("count_SR_by_complaint").desc, col("count_SR_by_complaint/zipcode").desc)
 
 
   // Question 7
-  val drugActivityComplaintsByBoroughDF = serviceRequestsDF
-    .where(col("complaint_type") === "Drug Activity")
-    .groupBy(col("borough"))
-    .agg(count("*").as("count"))
-    .orderBy(col("count").desc_nulls_last)
 
-  val drugActivityComplaintsByZipcodeDF = serviceRequestsDF
-    .where(col("complaint_type") === "Drug Activity")
-    .groupBy(col("incident_zip"))
-    .agg(count("*").as("count"))
-    .orderBy(col("count").desc_nulls_last)
+  // Create the Window functions partitioned by hour and by hour and complaint type
+  val wHour = Window.partitionBy("hour")
+  val wHourAndComplaint = Window.partitionBy("hour", "complaint_type")
+
+  // Filter to exclude the unspecified complaint types
+  // Count service requests by hour and by hour and complaint type, and create ranks based on that
+  val serviceRequestsByHourDF = cleanedServiceRequestsDF
+    .where(col("complaint_type") =!= "Unspecified")
+    .withColumn(
+      "hour",
+      hour(col("created_date"))
+    )
+    .withColumn(
+      "count_SR_by_hour",
+      count(lit(1)).over(wHour)
+    )
+    .withColumn(
+      "count_SR_by_hour/complaint",
+      count(lit(1)).over(wHourAndComplaint)
+    )
+    .withColumn(
+      "rank_complaint",
+      dense_rank().over(wHour.orderBy(col("count_SR_by_hour/complaint").desc))
+    )
+    // Filter by the most recurrent complaint type in each hour
+    .where(col("rank_complaint") === 1)
+    .withColumn(
+      "percentage_hour", percentageFormat(col("count_SR_by_hour") / totalRows)
+    )
+    // Select the required columns for the report
+    .select(
+      col("hour"),
+      col("complaint_type").as("recurrent_complaint_type"),
+      col("count_SR_by_hour"),
+      col("count_SR_by_hour/complaint"),
+      col("percentage_hour"),
+    )
+    .distinct()
+    .orderBy(col("count_SR_by_hour").desc)
+
 
   // Question 8
-  val serviceRequestsByHourDF = serviceRequestsDF
-    .groupBy(hour(col("created_date")).as("hour_of_the_day"))
-    .agg(count("*").as("count"))
-    .orderBy(col("count").desc_nulls_last)
+  // Find the agencies with the highest average resolution times, and some variability measures
+  // First, create the window function partitioned by agency
+  val wAgencyAcronym = Window.partitionBy("agency")
 
-  // Question 9
-  val avgResolutionTimeByAgencyDF = serviceRequestsDF
+  // Filter by the service requests that are closed, and measure the resolution time of each service request
+  // Find the average, max, min, stddev and coefficient of variation
+  val avgResolutionTimeByAgencyDF = cleanedServiceRequestsDF
     .where(col("status") === "Closed")
-    .groupBy(col("agency"))
-    .agg(
-      avg((col("closed_date").cast("long") - col("created_date").cast("long"))/86400)
-        .as("avg_resolution_time_in_days")
+    .withColumn("resolution_time_days",
+      round((col("closed_date").cast("long") -
+        col("created_date").cast("long")) / 86400,4)
     )
-    .orderBy(col("avg_resolution_time_in_days").desc_nulls_last)
-
+    .withColumn("avg_time",
+      round(avg(col("resolution_time_days")).over(wAgencyAcronym),4)
+    )
+    .withColumn("max_time",
+      round(max(col("resolution_time_days")).over(wAgencyAcronym),4)
+    )
+    .withColumn("min_time",
+      when(round(min(col("resolution_time_days")).over(wAgencyAcronym),4) < 0, "Undefined")
+        .otherwise(round(min(col("resolution_time_days")).over(wAgencyAcronym),4))
+    )
+    .withColumn("stddev",
+      round(stddev(col("resolution_time_days")).over(wAgencyAcronym),4)
+    )
+    .withColumn("coefficient_var",
+      round(col("stddev") / col("avg_time"),2)
+    )
+    // Select the required columns for the report
+    .select(
+      col("agency").as("agency_acronym"),
+      col("avg_time"),
+      col("max_time"),
+      col("min_time"),
+      col("stddev"),
+      col("coefficient_var")
+    )
+    .distinct()
+    .na.fill("Undefined", Seq("avg_time","max_time","min_time","stddev","coefficient_var"))
+    .limit(15)
+    .orderBy(col("avg_time").desc)
 
 }
