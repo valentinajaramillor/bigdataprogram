@@ -180,68 +180,76 @@ The report shows the 10 agencies with the most service requests made to the NYC 
   
 ### 3.2. What are the most recurrent types of complaints in the agencies with the most service requests?
 
-***New York City Police Department  
++--------------------------------------------------+-----------------------------------+------------------+----------------------------+--------------------+
+|agency_name                                       |complaint_type                     |count_SR_by_agency|count_SR_by_agency/complaint|percentage_in_agency|
++--------------------------------------------------+-----------------------------------+------------------+----------------------------+--------------------+
+|New York City Police Department                   |Noise - Residential                |8943589           |2889911                     |32.31 %             |
+|New York City Police Department                   |Illegal Parking                    |8943589           |1731749                     |19.36 %             |
+|New York City Police Department                   |Blocked Driveway                   |8943589           |1306452                     |14.61 %             |
+|Department of Housing Preservation and Development|HEAT/HOT WATER                     |7421521           |1757917                     |23.69 %             |
+|Department of Housing Preservation and Development|HEATING                            |7421521           |887720                      |11.96 %             |
+|Department of Housing Preservation and Development|PLUMBING                           |7421521           |840512                      |11.33 %             |
+|Department of Transportation                      |Street Condition                   |3680622           |1155611                     |31.40 %             |
+|Department of Transportation                      |Street Light Condition             |3680622           |1080133                     |29.35 %             |
+|Department of Transportation                      |Traffic Signal Condition           |3680622           |533054                      |14.48 %             |
+|Department of Sanitation                          |Request Large Bulky Item Collection|3644155           |1073753                     |29.47 %             |
+|Department of Sanitation                          |Dirty Conditions                   |3644155           |417008                      |11.44 %             |
+|Department of Sanitation                          |Sanitation Condition               |3644155           |383019                      |10.51 %             |
+|Department of Environmental Protection            |Water System                       |2175650           |806000                      |37.05 %             |
+|Department of Environmental Protection            |Noise                              |2175650           |604089                      |27.77 %             |
+|Department of Environmental Protection            |Sewer                              |2175650           |445863                      |20.49 %             |
++--------------------------------------------------+-----------------------------------+------------------+----------------------------+--------------------+
+
+The report displays the complaint types with the highest amounts of service requests (SR) by agency, with the count of SR by agency, by complaint and agency, and the percentage of the service requests of that specific complaint from the agency total amount. This information can be used to identify the issues that need to be improved in each agency, and what strategies can be adopted to prevent certain complaints. 
+
+**Code**
 
 ```scala
-+-----------------------+-------+
-|complaint_type         |count  |
-+-----------------------+-------+
-|Noise - Residential    |2889911|
-|Illegal Parking        |1731749|
-|Blocked Driveway       |1306452|
-|Noise - Street/Sidewalk|994535 |
-|Noise - Commercial     |493605 |
-+-----------------------+-------+
+  // Question 2
 
+  // Create the Window functions partitioned by agency and by agency and complaint type
+  val wAgency = Window.partitionBy("agency_name")
+  val wAgencyAndComplaint = Window.partitionBy("agency_name", "complaint_type")
+
+  // Count service requests by agency, by agency and complaint, and create ranks based on that
+  val mostRecurrentComplaintsByAgencyDF = cleanedServiceRequestsDF
+    .withColumn(
+      "count_SR_by_agency",
+      count(lit(1)).over(wAgency)
+    )
+    .withColumn(
+      "count_SR_by_agency/complaint",
+      count(lit(1)).over(wAgencyAndComplaint)
+    )
+    .withColumn(
+      "rank_agency",
+      dense_rank().over(Window.orderBy(col("count_SR_by_agency").desc))
+    )
+    .withColumn(
+      "rank_complaint",
+      dense_rank().over(wAgency.orderBy(col("count_SR_by_agency/complaint").desc))
+    )
+    .withColumn(
+      "percentage_in_agency", percentageFormat(col("count_SR_by_agency/complaint") / col("count_SR_by_agency"))
+    )
+    // Filter by the agencies and complaints with more service requests
+    .where(
+      (col("rank_complaint") <= 3) and
+        (col("rank_agency") <= 5)
+    )
+    // Select the required columns for the report
+    .select(
+      col("agency_name"),
+      col("complaint_type"),
+      col("count_SR_by_agency"),
+      col("count_SR_by_agency/complaint"),
+      col("percentage_in_agency")
+    )
+    .distinct()
+    .orderBy(col("count_SR_by_agency").desc, col("count_SR_by_agency/complaint").desc)
 ```
-  
-***Department of Housing Preservation and Development  
 
-
-```scala
-+--------------------+-------+
-|complaint_type      |count  |
-+--------------------+-------+
-|HEAT/HOT WATER      |1757917|
-|HEATING             |887720 |
-|PLUMBING            |840512 |
-|UNSANITARY CONDITION|675271 |
-|GENERAL CONSTRUCTION|500821 |
-+--------------------+-------+
-
-``` 
-  
-***Department of Transportation  
-
-```scala
-+------------------------+-------+
-|complaint_type          |count  |
-+------------------------+-------+
-|Street Condition        |1155611|
-|Street Light Condition  |1080133|
-|Traffic Signal Condition|533054 |
-|Sidewalk Condition      |319892 |
-|Broken Muni Meter       |172113 |
-+------------------------+-------+
-
-```
-  
-### 3.3. Which cities have the highest number of service requests? ###
-
-```scala
-+-------------+-------+
-|city         |count  |
-+-------------+-------+
-|BROOKLYN     |9208752|
-|NEW YORK     |5778849|
-|BRONX        |5739577|
-|null         |1857054|
-|STATEN ISLAND|1547592|
-+-------------+-------+
-
-``` 
-
-### 3.4. Which boroughs have the highest number of service requests? ###
+### 3.3. Which boroughs have the highest number of service requests? 
 
 ```scala
 +-------------+-------+
@@ -256,7 +264,26 @@ The report shows the 10 agencies with the most service requests made to the NYC 
 
 ```  
 
-### 3.5. What are the most common channels through which service requests are made? ###
+
+
+**Code**
+
+```scala
+  // Question 3
+  // Find the boroughs with the highest amount of service requests
+  // Group by borough, count rows, add percentage of count from total rows and order by the count
+  val serviceRequestsByBoroughDF = cleanedServiceRequestsDF
+    .groupBy(col("borough"))
+    .agg(
+      count("*").as("count_service_requests")
+    )
+    .withColumn(
+      "percentage", percentageFormat(col("count_service_requests") / totalRows)
+    )
+    .orderBy(col("count_service_requests").desc)
+```
+
+### 3.4. What are the most common channels through which service requests are made? ###
 
 ```scala
 +----------------------+--------+
@@ -286,80 +313,133 @@ The report shows the 10 agencies with the most service requests made to the NYC 
 
 ``` 
 
+**Code**
 
-### 3.6. How has the channel evolved in the last years? ###
-  
 ```scala
-+------------+----------------------+-------+
-|created_year|open_data_channel_type|  count|
-+------------+----------------------+-------+
-|        2010|               UNKNOWN|1159221|
-|        2010|                 PHONE| 824477|
-|        2010|                 OTHER|  64712|
-|        2010|                ONLINE|  41158|
-|        2011|               UNKNOWN|1093240|
-|        2011|                 PHONE| 762385|
-|        2011|                ONLINE|  96427|
-|        2011|                 OTHER|  58974|
-|        2011|                MOBILE|      2|
-|        2012|                 PHONE| 970540|
-|        2012|               UNKNOWN| 658090|
-|        2012|                ONLINE| 166379|
-|        2012|                 OTHER|  42040|
-|        2013|                 PHONE|1258535|
-|        2013|               UNKNOWN| 317052|
-|        2013|                ONLINE| 259160|
-|        2013|                 OTHER|  43441|
-|        2013|                MOBILE|   9283|
-|        2014|                 PHONE|1306082|
-|        2014|                ONLINE| 386264|
-|        2014|               UNKNOWN| 360149|
-|        2014|                MOBILE|  70271|
-|        2014|                 OTHER|  33959|
-|        2015|                 PHONE|1314670|
-|        2015|                ONLINE| 463875|
-|        2015|               UNKNOWN| 367315|
-|        2015|                MOBILE| 151617|
-|        2015|                 OTHER|  24945|
-|        2016|                 PHONE|1283903|
-|        2016|                ONLINE| 512282|
-|        2016|               UNKNOWN| 337263|
-|        2016|                MOBILE| 246970|
-|        2016|                 OTHER|  28504|
-|        2017|                 PHONE|1333598|
-|        2017|                ONLINE| 521442|
-|        2017|               UNKNOWN| 346906|
-|        2017|                MOBILE| 277130|
-|        2017|                 OTHER|  29331|
-|        2018|                 PHONE|1480708|
-|        2018|                ONLINE| 565393|
-|        2018|               UNKNOWN| 367205|
-|        2018|                MOBILE| 314251|
-|        2018|                 OTHER|  32504|
-|        2019|                 PHONE|1309555|
-|        2019|                ONLINE| 549347|
-|        2019|               UNKNOWN| 401574|
-|        2019|                MOBILE| 364054|
-|        2019|                 OTHER|   8569|
-|        2020|                 PHONE|1152892|
-|        2020|                ONLINE| 904251|
-|        2020|                MOBILE| 535269|
-|        2020|               UNKNOWN| 349028|
-|        2020|                 OTHER|    610|
-|        2021|                ONLINE|1294503|
-|        2021|                 PHONE|1124751|
-|        2021|                MOBILE| 544609|
-|        2021|               UNKNOWN| 256638|
-|        2021|                 OTHER|    371|
-|        2022|                ONLINE|1086464|
-|        2022|                 PHONE| 595095|
-|        2022|                MOBILE| 524514|
-|        2022|               UNKNOWN| 225139|
-|        2022|                 OTHER|     47|
-+------------+----------------------+-------+
+  // Question 4
+  // Find the open data channel types with the highest amount of service requests
+  // Group by open data channel type, count rows, add percentage of count from total rows and order by the count
+  val serviceRequestsByChannelDF = cleanedServiceRequestsDF
+    .groupBy(col("open_data_channel_type"))
+    .agg(
+      count("*").as("count_service_requests")
+    )
+    .withColumn(
+      "percentage", percentageFormat(col("count_service_requests") / totalRows)
+    )
+    .orderBy(col("count_service_requests").desc)
+```
+
+
+### 3.5. How has the channel evolved in the last years? 
+
+```scala
++----+----------------------+----------------+------------------------+----------+
+|year|open_data_channel_type|count_SR_by_year|count_SR_by_year/channel|percentage|
++----+----------------------+----------------+------------------------+----------+
+|2010|               UNKNOWN|         2089568|                 1159221|   55.48 %|
+|2010|                 PHONE|         2089568|                  824477|   39.46 %|
+|2010|                 OTHER|         2089568|                   64712|    3.10 %|
+|2010|                ONLINE|         2089568|                   41158|    1.97 %|
+|2011|               UNKNOWN|         2011028|                 1093240|   54.36 %|
+|2011|                 PHONE|         2011028|                  762385|   37.91 %|
+|2011|                ONLINE|         2011028|                   96427|    4.79 %|
+|2011|                 OTHER|         2011028|                   58974|    2.93 %|
+|2011|                MOBILE|         2011028|                       2|    0.00 %|
+|2012|                 PHONE|         1837049|                  970540|   52.83 %|
+|2012|               UNKNOWN|         1837049|                  658090|   35.82 %|
+|2012|                ONLINE|         1837049|                  166379|    9.06 %|
+|2012|                 OTHER|         1837049|                   42040|    2.29 %|
+|2013|                 PHONE|         1887471|                 1258535|   66.68 %|
+|2013|               UNKNOWN|         1887471|                  317052|   16.80 %|
+|2013|                ONLINE|         1887471|                  259160|   13.73 %|
+|2013|                 OTHER|         1887471|                   43441|    2.30 %|
+|2013|                MOBILE|         1887471|                    9283|    0.49 %|
+|2014|                 PHONE|         2156725|                 1306082|   60.56 %|
+|2014|                ONLINE|         2156725|                  386264|   17.91 %|
+|2014|               UNKNOWN|         2156725|                  360149|   16.70 %|
+|2014|                MOBILE|         2156725|                   70271|    3.26 %|
+|2014|                 OTHER|         2156725|                   33959|    1.57 %|
+|2015|                 PHONE|         2322422|                 1314670|   56.61 %|
+|2015|                ONLINE|         2322422|                  463875|   19.97 %|
+|2015|               UNKNOWN|         2322422|                  367315|   15.82 %|
+|2015|                MOBILE|         2322422|                  151617|    6.53 %|
+|2015|                 OTHER|         2322422|                   24945|    1.07 %|
+|2016|                 PHONE|         2408922|                 1283903|   53.30 %|
+|2016|                ONLINE|         2408922|                  512282|   21.27 %|
+|2016|               UNKNOWN|         2408922|                  337263|   14.00 %|
+|2016|                MOBILE|         2408922|                  246970|   10.25 %|
+|2016|                 OTHER|         2408922|                   28504|    1.18 %|
+|2017|                 PHONE|         2508407|                 1333598|   53.17 %|
+|2017|                ONLINE|         2508407|                  521442|   20.79 %|
+|2017|               UNKNOWN|         2508407|                  346906|   13.83 %|
+|2017|                MOBILE|         2508407|                  277130|   11.05 %|
+|2017|                 OTHER|         2508407|                   29331|    1.17 %|
+|2018|                 PHONE|         2760061|                 1480708|   53.65 %|
+|2018|                ONLINE|         2760061|                  565393|   20.48 %|
+|2018|               UNKNOWN|         2760061|                  367205|   13.30 %|
+|2018|                MOBILE|         2760061|                  314251|   11.39 %|
+|2018|                 OTHER|         2760061|                   32504|    1.18 %|
+|2019|                 PHONE|         2633099|                 1309555|   49.73 %|
+|2019|                ONLINE|         2633099|                  549347|   20.86 %|
+|2019|               UNKNOWN|         2633099|                  401574|   15.25 %|
+|2019|                MOBILE|         2633099|                  364054|   13.83 %|
+|2019|                 OTHER|         2633099|                    8569|    0.33 %|
+|2020|                 PHONE|         2942050|                 1152892|   39.19 %|
+|2020|                ONLINE|         2942050|                  904251|   30.74 %|
+|2020|                MOBILE|         2942050|                  535269|   18.19 %|
+|2020|               UNKNOWN|         2942050|                  349028|   11.86 %|
+|2020|                 OTHER|         2942050|                     610|    0.02 %|
+|2021|                ONLINE|         3220872|                 1294503|   40.19 %|
+|2021|                 PHONE|         3220872|                 1124751|   34.92 %|
+|2021|                MOBILE|         3220872|                  544609|   16.91 %|
+|2021|               UNKNOWN|         3220872|                  256638|    7.97 %|
+|2021|                 OTHER|         3220872|                     371|    0.01 %|
+|2022|                ONLINE|         2431259|                 1086464|   44.69 %|
+|2022|                 PHONE|         2431259|                  595095|   24.48 %|
+|2022|                MOBILE|         2431259|                  524514|   21.57 %|
+|2022|               UNKNOWN|         2431259|                  225139|    9.26 %|
+|2022|                 OTHER|         2431259|                      47|    0.00 %|
++----+----------------------+----------------+------------------------+----------+
 
 ``` 
 
+**Code**
+
+```scala
+    // Question 5
+  // Create the window functions partitioned by year and by year and channel
+  val wYear = Window.partitionBy(col("year"))
+  val wYearAndChannel = Window.partitionBy(col("year"), col("open_data_channel_type"))
+
+  // Create column with creation year, count of service requests SR by year and by year and channel
+  // and the percentage of the count of SR from the year's total count
+  val channelEvolutionDF = cleanedServiceRequestsDF
+    .select(
+      col("created_date"), col("open_data_channel_type")
+    )
+    .withColumn("year",
+      year(col("created_date"))
+    )
+    .withColumn("count_SR_by_year",
+      count(lit(1)).over(wYear)
+    )
+    .withColumn("count_SR_by_year/channel",
+      count(lit(1)).over(wYearAndChannel)
+    )
+    .withColumn("percentage",
+      percentageFormat(col("count_SR_by_year/channel") / col("count_SR_by_year"))
+    )
+    .select(
+      col("year"),
+      col("open_data_channel_type"),
+      col("count_SR_by_year"),
+      col("count_SR_by_year/channel"),
+      col("percentage")
+    )
+    .distinct()
+    .orderBy(col("year"), col("count_SR_by_year/channel").desc)
+```
 
 ### 3.7. Which are the boroughs and zipcodes that have the highest number of noise complaints? ###
   
