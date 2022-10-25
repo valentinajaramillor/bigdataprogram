@@ -14,6 +14,7 @@ object exploration extends App {
     .config("spark.memory.offHeap.size", "16g")
     .getOrCreate()
 
+  // Configuration to use the legacy format in newer versions of Spark
   spark.sql("set spark.sql.legacy.timeParserPolicy=LEGACY")
 
   val serviceRequestsSchema = StructType(Array(
@@ -168,7 +169,11 @@ object exploration extends App {
         col("open_data_channel_type") === "OTHER")
 
 
-  // Initial Insights
+  cleanedServiceRequestsDF.write
+    .mode(SaveMode.Overwrite)
+    .parquet("src/main/resources/data/311_Service_Requests_from_2010_to_Present_Cleaned")
+
+
 
   /**
    * Questions:

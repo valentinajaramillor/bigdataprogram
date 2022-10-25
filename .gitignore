@@ -223,3 +223,8 @@ spark-warehouse/
 
 
 # End of https://www.toptal.com/developers/gitignore/api/spark,intellij
+
+# Personal added
+dataset_test/spark-cluster/data/*
+dataset_test/spark-cluster/apps/*
+src/main/resources/warehouse/*
