@@ -180,6 +180,7 @@ The report shows the 10 agencies with the most service requests made to the NYC 
   
 ### 3.2. What are the most recurrent types of complaints in the agencies with the most service requests?
 
+```scala
 +--------------------------------------------------+-----------------------------------+------------------+----------------------------+--------------------+
 |agency_name                                       |complaint_type                     |count_SR_by_agency|count_SR_by_agency/complaint|percentage_in_agency|
 +--------------------------------------------------+-----------------------------------+------------------+----------------------------+--------------------+
@@ -199,6 +200,7 @@ The report shows the 10 agencies with the most service requests made to the NYC 
 |Department of Environmental Protection            |Noise                              |2175650           |604089                      |27.77 %             |
 |Department of Environmental Protection            |Sewer                              |2175650           |445863                      |20.49 %             |
 +--------------------------------------------------+-----------------------------------+------------------+----------------------------+--------------------+
+```
 
 The report displays the complaint types with the highest amounts of service requests (SR) by agency, with the count of SR by agency, by complaint and agency, and the percentage of the service requests of that specific complaint from the agency total amount. This information can be used to identify the issues that need to be improved in each agency, and what strategies can be adopted to prevent certain complaints. 
 
@@ -252,19 +254,20 @@ The report displays the complaint types with the highest amounts of service requ
 ### 3.3. Which boroughs have the highest number of service requests? 
 
 ```scala
-+-------------+-------+
-|borough      |count  |
-+-------------+-------+
-|BROOKLYN     |9270709|
-|QUEENS       |7264167|
-|MANHATTAN    |6046702|
-|BRONX        |5769470|
-|STATEN ISLAND|1573200|
-+-------------+-------+
++-------------+----------------------+----------+
+|      borough|count_service_requests|percentage|
++-------------+----------------------+----------+
+|     BROOKLYN|               9270709|   29.70 %|
+|       QUEENS|               7264167|   23.28 %|
+|    MANHATTAN|               6046702|   19.37 %|
+|        BRONX|               5769470|   18.49 %|
+|STATEN ISLAND|               1573200|    5.04 %|
+|  Unspecified|               1284685|    4.12 %|
++-------------+----------------------+----------+
 
 ```  
 
-
+The report gives information about the amount of SR per borough, with the percentage that this number represents to the total amount of SR. The insight can be applied to identify geographically the locations in New York where agencies should pay more attention to reduce incidences.
 
 **Code**
 
@@ -286,32 +289,19 @@ The report displays the complaint types with the highest amounts of service requ
 ### 3.4. What are the most common channels through which service requests are made? ###
 
 ```scala
-+----------------------+--------+
-|open_data_channel_type|count   |
-+----------------------+--------+
-|PHONE                 |14717191|
-|ONLINE                |6846945 |
-|UNKNOWN               |6238820 |
-|MOBILE                |3037970 |
-|OTHER                 |368007  |
-|null                  |21      |
-|990400                |5       |
-|975580                |5       |
-|993558                |5       |
-|993461                |3       |
-|1005067               |3       |
-|995799                |3       |
-|983424                |3       |
-|990880                |3       |
-|1001324               |3       |
-|984598                |3       |
-|1004745               |3       |
-|1000346               |3       |
-|990003                |2       |
-|1017392               |2       |
-+----------------------+--------+
++----------------------+----------------------+----------+
+|open_data_channel_type|count_service_requests|percentage|
++----------------------+----------------------+----------+
+|                 PHONE|              14717191|   47.16 %|
+|                ONLINE|               6846945|   21.94 %|
+|               UNKNOWN|               6238820|   19.99 %|
+|                MOBILE|               3037970|    9.73 %|
+|                 OTHER|                368007|    1.18 %|
++----------------------+----------------------+----------+
 
 ``` 
+
+The report presents the different types of channels through which the service requests are made, and their total number of SR. This helps to know which channels are the ones that the citizens use the most, and how can the NYC 311 improve the communication with the public and maintain the channels working properly.
 
 **Code**
 
@@ -329,7 +319,6 @@ The report displays the complaint types with the highest amounts of service requ
     )
     .orderBy(col("count_service_requests").desc)
 ```
-
 
 ### 3.5. How has the channel evolved in the last years? 
 
@@ -402,7 +391,9 @@ The report displays the complaint types with the highest amounts of service requ
 |2022|                 OTHER|         2431259|                      47|    0.00 %|
 +----+----------------------+----------------+------------------------+----------+
 
-``` 
+```
+
+The report displays the evolution of the number of SR by channel type over the years. By knowing how the number of SR by channel type increase over the years, it is possible to predict which channels will be preferred by the public in the future, and thus increase channel capacity.
 
 **Code**
 
