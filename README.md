@@ -27,6 +27,11 @@ It contains 31,209,470 records, and each record represents the information about
 
 ## 2. Exploratory Data Analysis (EDA) Report
 
+
+The dataset was initially analyzed through the file `exploration.scala`. In this file it is defined the cleansing of the data that came from the original CSV file. After converting the CSV file to a Parquet file, to improve performance, it was required to inspect the dataset for null values, replace those null values with a key word like "Unspecified" and remove the columns that have the highest amounts of missing data and that were not useful for the insights. 
+
+Then, to clean the outliers, every column of the dataset was inspected, to find values that were not accurate and consistent with the dataset description and granularity. Details of each step of the cleaning process are as follows:
+
 ### 2.1. Formatting
 To improve the readability of the column names, the format was changed by removing the whitespaces and replacing the uppercase letters to lowercase. For example, "Created Date" was replaced by "created_date". These changes were introduced in the schema definition for the DataFrame: 
 
@@ -75,7 +80,23 @@ To improve the readability of the column names, the format was changed by removi
     StructField("location", StringType)
   ))
 ```
-After specifying a schema for the DataFrame, it was required to read the dataset, that was in CSV format initially, but to improve the performance of the application it is preferred to have the dataset in Parquet format, so this is another transformation that will be performed to the dataset.
+After specifying a schema for the DataFrame, it was required to read the dataset, that was in CSV format initially, but to improve the performance of the application it is preferred to have the dataset in Parquet format, so this is another transformation that was be performed to the dataset.
+
+```scala
+  // Reading the dataset from the parquet file to a DataFrame
+  val serviceRequestsDF = spark.read
+    .schema(serviceRequestsSchema)
+    .option("timestampFormat", "MM/dd/YYYY hh:mm:ss aa")
+    .parquet("src/main/resources/data/311_Service_Requests_from_2010_to_Present")
+```
+
+Also, a configuration to use the Legacy format was added before to manipulate some date formats in newer versions of Spark:
+
+```scala
+  // Configuration to use the legacy format in newer versions of Spark
+  spark.sql("set spark.sql.legacy.timeParserPolicy=LEGACY")
+  
+```
 
 ### 2.2. Missing data (Null Values)
 After making an inspection of the columns in the dataset, it was possible to find the following percentages of missing values:
@@ -130,11 +151,47 @@ After making an inspection of the columns in the dataset, it was possible to fin
 
 Out of 41 columns, 16 of them have less than 5% of null values, so these are the columns that are going to be used for the main insights. The rest of the columns, specifically the ones with the highest percentage of missing data, correspond to columns that give information about certain types of complaints, some of them related to vehicles or taxis (for example columns like vehicle_type with 99.97% nulls and taxi_company_borough with 99.92% nulls), and about specific details of the service request's address.
 
-The columns with more than 10% of missing values were removed, as these columns are not useful for the future insights in this project. The remaining columns of type string had the null values replaced by "Unspecified".
+The columns with more than 10% of missing values were removed, as these columns are not useful for the future insights in this project. This was performed by extracting the column names of the columns that have more than 10% of null values, according to the previous table `nullStatsDF`. 
+
+```scala
+  // Creating a list of the previous columns
+  val listOfNullColumns = nullStatsDF
+    .where(col("null_count") > 3100000)
+    .map(f => f.getString(0))
+    .collect()
+    .toList
+
+  // Creating the DataFrame of the columns with less than 10% of null values
+  val remainingColumnsList = serviceRequestsDF.columns.diff(listOfNullColumns)
+  val shorterServiceRequestsDF = serviceRequestsDF.select(
+    remainingColumnsList.map(
+      cn => col(cn)
+    ): _*
+  )
+```
+
+The remaining columns had the null values replaced by "Unspecified".
+
+```scala
+  // Replacing the remaining null values with undefined
+  val withUnspecifiedDF = shorterServiceRequestsDF.na
+    .fill("Unspecified")
+```
 
 ### 2.3. Outliers and inaccurate data
 
 After inspecting the columns, it was possible to find that in the column "open_data_channel_type", there were 516 rows (0.165%) with channels of service request different to: "PHONE", "ONLINE", "MOBILE", "UNKNOWN" or "OTHER". As these are the channel types known and specified by the data source, the rows with other channels correspond to inaccurate data, so they were removed before obtaining the reports and insights.
+
+```scala
+  //Remove outliers in open_data_channel_type
+  val cleanedServiceRequestsDF = withUnspecifiedDF
+    .where(
+      col("open_data_channel_type") === "PHONE" or
+        col("open_data_channel_type") === "ONLINE" or
+        col("open_data_channel_type") === "MOBILE" or
+        col("open_data_channel_type") === "UNKNOWN" or
+        col("open_data_channel_type") === "OTHER")
+```
 
 ## 3. Insights, Results and Analysis
 
@@ -157,7 +214,7 @@ After inspecting the columns, it was possible to find that in the column "open_d
 +--------------------------------------------------+----------------------+----------+
 ```
 
-The report shows the 10 agencies with the most service requests made to the NYC 311, and the percentage of this count from the total amount of service requests. This report is useful to identify the agencies which need special attention or a bigger channel of communication and response for the public. 
+The report shows the 10 agencies with the most service requests made to the NYC 311, and the percentage of this count from the total amount of service requests. The agencies New York City Police Department, Department of Housing Preservation and Development and Department of Transportation are the top 3 agencies with the most service requests. This report is useful to identify the agencies which need special attention or a bigger channel of communication and response for the public. 
 
 **Code**
 
@@ -200,7 +257,7 @@ The report shows the 10 agencies with the most service requests made to the NYC 
 +--------------------------------------------------+-----------------------------------+------------------+----------------------------+--------------------+
 ```
 
-The report displays the complaint types with the highest amounts of service requests (SR) by agency, with the count of SR by agency, by complaint and agency, and the percentage of the service requests of that specific complaint from the agency total amount. This information can be used to identify the issues that need to be improved in each agency, and what strategies can be adopted to prevent certain complaints. 
+The report displays the complaint types with the highest amounts of service requests (SR) by agency, with the count of SR by agency, by complaint and agency, and the percentage of the service requests of that specific complaint from the agency total amount. From the New York City Police Department, the most recurrent complaint type is from the noise. From the Department of Housing Preservation and Development the most recurrent complaints are the ones that correspond to issues related to the heating, and from the Department of Transportation, the biggest issue is the condition of different parts of the streets. This information can be used to identify the issues that need to be improved in each agency, and what strategies can be adopted to prevent certain complaints. 
 
 **Code**
 
@@ -265,7 +322,7 @@ The report displays the complaint types with the highest amounts of service requ
 
 ```  
 
-The report gives information about the amount of SR per borough, with the percentage that this number represents to the total amount of SR. The insight can be applied to identify geographically the locations in New York where agencies should pay more attention to reduce incidences.
+The report gives information about the amount of SR per borough, with the percentage that this number represents to the total amount of SR. The top 3 boroughs with the most amount of SR are Brooklyn, Queens and Manhattan. The insight can be applied to identify geographically the locations in New York where agencies should pay more attention to reduce incidences.
 
 **Code**
 
@@ -299,7 +356,7 @@ The report gives information about the amount of SR per borough, with the percen
 
 ``` 
 
-The report presents the different types of channels through which the service requests are made, and their total number of SR. This helps to know which channels are the ones that the citizens use the most, and how can the NYC 311 improve the communication with the public and maintain the channels working properly.
+The report presents the different types of channels through which the service requests are made, and their total number of SR. The channel that is the most used is the phone by a big margin of difference, knowing that traditionally it was more common to make calls to the NYC 311. But with the advances in technology, more service requests are made through online channels. This helps to know which channels are the ones that the citizens use the most, and how can the NYC 311 improve the communication with the public and maintain the channels working properly.
 
 **Code**
 
@@ -391,7 +448,7 @@ The report presents the different types of channels through which the service re
 
 ```
 
-The report displays the evolution of the number of SR by channel type over the years. By knowing how the number of SR by channel type increases over the years, it is possible to predict which channels will be preferred by the public in the future, and thus increase channel capacity.
+The report displays the evolution of the number of SR by channel type over the years. By 2010, the most used channel was the phone, but as years passed, the online channels have taken the advantage, becoming the most common channel to make service requests since 2021. Also, the mobile channel is starting to get more service requests made through it, and by the behavior of the numbers, it looks like the mobile channel will be the most used in the following years. By knowing how the number of SR by channel type increases over the years, it is possible to predict which channels will be preferred by the public in the future, and thus increase channel capacity.
 
 **Code**
 
@@ -457,7 +514,7 @@ The report displays the evolution of the number of SR by channel type over the y
 
 ```
 
-The report shows the most recurrent complaint types, and the boroughs and zipcodes where they happen the most. This table is useful to focus the strategies in certain locations to prevent the incidents that citizens report most frequently.
+The report shows the most recurrent complaint types, and the boroughs and zipcodes where they happen the most. According to the table, Staten Island is the borough with the poorest street conditions, and the Bronx is the noisiest borough. This table is useful to focus the strategies in certain locations to prevent the incidents that citizens report most frequently.
 
 **Code**
 
@@ -547,7 +604,7 @@ The report shows the most recurrent complaint types, and the boroughs and zipcod
 
 ```   
 
-The report is ordered from the hours with the highest number of service requests and the most recurrent complaint type in that hour. There is an increase in the number of service requests around midnight and in the morning, so the responding agencies and the NYC 311 have to make sure that there are enough agents to answer the requests in the most busy hours.
+The report is ordered from the hours with the highest number of service requests and the most recurrent complaint type in that hour. It is possible to see that in the late afternoon and in the evening, where most of the parties happen, there is an increase in the amount of service requests related to the noise. There is also an increase in the number of service requests around midnight and in the morning, so the responding agencies and the NYC 311 have to make sure that there are enough agents to answer the requests in the most busy hours. 
 
 **Code**
 
@@ -619,7 +676,7 @@ The report is ordered from the hours with the highest number of service requests
 +---------------------------------------+--------+---------+---------+--------+---------------+
 
 ```   
-This table provides measures of variability for the resolution time in days by agency, for the 15 agencies with the highest average resolution time. This information can be used to identify the agencies that have the highest resolution times, and create improvement plans to reduce these measures.
+This table provides measures of variability for the resolution time in days by agency, for the 15 agencies with the highest average resolution time. The DPR (Department of Parks and Recreation) is the agency with the highest average resolution time in general, and the DOB (Department of Buildings) is the agency with the highest maximum resolution time among the agencies with the highest average resolution times. This information can be used to identify the agencies that have the highest resolution times, and create improvement plans to reduce these measures.
 
 **Code**
 
@@ -668,3 +725,4 @@ This table provides measures of variability for the resolution time in days by a
     .orderBy(col("avg_time").desc)
     
  ```
+
