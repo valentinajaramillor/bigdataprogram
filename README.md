@@ -6,7 +6,7 @@ This is a practice project to analyze a dataset through Apache Spark, creating a
 ## 1. About the Dataset
 The dataset used, with title "311 Service Requests from 2010 to Present", was downloaded through:  https://data.cityofnewyork.us/Social-Services/311-Service-Requests-from-2010-to-Present/erm2-nwe9 
 
-It contains 31,209,470 records, and each record represents the information about a service request made to the NYC 311. The NYC 311 line gives access to non-emergency City services and info about City government programs. The dataset has 41 columns, and the most characteristic ones are the following:
+It contains 31,209,470 records, and each record represents the information about a service request made to the NYC 311. Each service request was submitted at a `created_date` at a `incident_zip` and `borough`, it has a `complaint_type` and it is managed or answered by an `agency`. The NYC 311 line gives access to non-emergency City services and info about City government programs. The dataset has 41 columns, and the most characteristic ones are the following:
 
 |    Column     | Description  |
 |:---:|---|
@@ -180,7 +180,7 @@ The remaining columns had the null values replaced by "Unspecified".
 
 ### 2.3. Outliers and inaccurate data
 
-After inspecting the columns, it was possible to find that in the column "open_data_channel_type", there were 516 rows (0.165%) with channels of service request different to: "PHONE", "ONLINE", "MOBILE", "UNKNOWN" or "OTHER". As these are the channel types known and specified by the data source, the rows with other channels correspond to inaccurate data, so they were removed before obtaining the reports and insights.
+After inspecting each of the columns, it was possible to find that in the column `open_data_channel_type`, there were 516 rows (0.165%) with channels of service request different to: "PHONE", "ONLINE", "MOBILE", "UNKNOWN" or "OTHER". As these are the channel types known and specified by the data source, the rows with other channels correspond to inaccurate data, so they were removed before obtaining the reports and insights.
 
 ```scala
   //Remove outliers in open_data_channel_type
@@ -192,6 +192,10 @@ After inspecting the columns, it was possible to find that in the column "open_d
         col("open_data_channel_type") === "UNKNOWN" or
         col("open_data_channel_type") === "OTHER")
 ```
+
+In columns like, for example, `borough`, after analyzing the distinct values, there were only 6 different ones: "BROOKLYN", "QUEENS", "MANHATTAN", "STATEN ISLAND", "BRONX" and "Unspecified". As these were the only values accepted for the dataset, the information was accurate and there weren't any outliers, and it was possible to create valuable insights with this column. 
+
+In other columns, like `complaint_type`, there were a wide range of distinct values because there are many diferent complaint types, and even if some of those values were not spelled correctly, or had inaccurate data, it was not possible to filter or clean all of the possible combinations of phrases contained in this column, so it was decided to leave all the values as they were and work with them, as they didn't represent a burden for the statistical insights. 
 
 ## 3. Insights, Results and Analysis
 
