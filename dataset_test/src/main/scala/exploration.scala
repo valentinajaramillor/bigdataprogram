@@ -8,10 +8,9 @@ object exploration extends App {
   val spark = SparkSession.builder()
     .appName("exploration")
     .master("local[*]")
-    .config("spark.executor.memory", "70g")
-    .config("spark.driver.memory", "50g")
+    .config("spark.sql.shuffle.partitions", "5")
     .config("spark.memory.offHeap.enabled", true)
-    .config("spark.memory.offHeap.size", "16g")
+    .config("spark.memory.offHeap.size", "7g")
     .getOrCreate()
 
   // Configuration to use the legacy format in newer versions of Spark
@@ -169,9 +168,9 @@ object exploration extends App {
         col("open_data_channel_type") === "OTHER")
 
 
-  cleanedServiceRequestsDF.write
-    .mode(SaveMode.Overwrite)
-    .parquet("src/main/resources/data/311_Service_Requests_from_2010_to_Present_Cleaned")
+  // cleanedServiceRequestsDF.write
+  //   .mode(SaveMode.Overwrite)
+  //   .parquet("src/main/resources/data/311_Service_Requests_from_2010_to_Present_Cleaned")
 
 
 
