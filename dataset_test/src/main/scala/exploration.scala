@@ -8,6 +8,7 @@ object exploration extends App {
   val spark = SparkSession.builder()
     .appName("exploration")
     .master("local[*]")
+    .config("spark.driver.memory","7g")
     .config("spark.sql.shuffle.partitions", "5")
     .config("spark.memory.offHeap.enabled", true)
     .config("spark.memory.offHeap.size", "7g")
@@ -182,10 +183,9 @@ object exploration extends App {
    * 3. Which boroughs have the highest number of service requests?
    * 4. What are the most common channels through which service requests are made?
    * 5. How has the channel evolved in the last years?
-   * 6. Which are the boroughs and zipcodes that have the highest number of noise complaints?
-   * 7. Which are the boroughs and zipcodes that have the highest number of drug activity complaints?
-   * 8. What is the hour of the day with the most service requests?
-   * 9. What is the average resolution time by agency?
+   * 6. What are the boroughs and zipcodes that have the highest number of the most recurrent complaint types?
+   * 7. What are the hours of the day with the most service requests and the most recurrent complaint type in those hours?
+   * 8. What is the average resolution time by agency?
    */
 
   import org.apache.spark.sql.functions._
@@ -309,6 +309,7 @@ object exploration extends App {
     .distinct()
     .orderBy(col("year"), col("count_SR_by_year/channel").desc)
 
+  channelEvolutionDF.show(63)
 
   // Question 6
   // Find the most recurrent complaint types and the zipcodes where they happen the most
