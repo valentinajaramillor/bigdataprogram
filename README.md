@@ -659,64 +659,64 @@ The report is ordered from the hours with the highest number of service requests
 ### 3.8. What is the average resolution time by agency?
   
 ```scala
-+---------------------------------------+--------+---------+---------+--------+---------------+
-|agency_acronym                         |avg_time|max_time |min_time |stddev  |coefficient_var|
-+---------------------------------------+--------+---------+---------+--------+---------------+
-|DPR                                    |91.8062 |2102.7183|Undefined|195.9294|2.13           |
-|DOB                                    |79.5556 |4637.4092|0.0      |236.8871|2.98           |
-|TLC                                    |72.3442 |3317.2641|0.0      |246.4573|3.41           |
-|EDC                                    |61.9935 |943.9973 |0.0      |113.1057|1.82           |
-|DCA                                    |21.7851 |1306.6651|0.0024   |73.8285 |3.39           |
-|DOT                                    |13.7536 |3276.0903|Undefined|67.9973 |4.94           |
-|NYCEM                                  |13.6451 |297.0237 |0.0      |15.7726 |1.16           |
-|HPD                                    |13.2958 |4433.5569|0.0      |34.0229 |2.56           |
-|MAYORâS OFFICE OF SPECIAL ENFORCEMENT|10.273  |126.8133 |1.0E-4   |20.0178 |1.95           |
-|DOF                                    |7.3759  |596.1037 |9.0E-4   |16.1308 |2.19           |
-|DORIS                                  |3.5491  |16.2923  |0.059    |4.1489  |1.17           |
-|ACS                                    |0.9501  |0.9501   |0.9501   |NaN     |NaN            |
-|NYPD                                   |0.2865  |1093.9978|Undefined|6.7255  |23.47          |
-|3-1-1                                  |0.0104  |192.9932 |0.0      |1.3456  |129.38         |
-|HRA                                    |6.0E-4  |1.2278   |0.0      |0.0045  |7.5            |
-+---------------------------------------+--------+---------+---------+--------+---------------+
++---------------------------------------+--------+---------+--------+--------+---------------+
+|agency_name                            |avg_time|max_time |min_time|stddev  |coefficient_var|
++---------------------------------------+--------+---------+--------+--------+---------------+
+|DCA                                    |442.7401|1162.1367|2.7618  |546.2172|1.23           |
+|311 Administrative Supervisor          |192.9932|192.9932 |192.9932|NaN     |NaN            |
+|Division of Alternative Management     |173.6953|2036.0   |0.0     |379.2855|2.18           |
+|Central - Department of Education      |112.019 |1361.0007|0.0079  |142.0322|1.27           |
+|Department of Education                |62.1211 |965.0765 |4.0E-4  |115.4694|1.86           |
+|Office of Technology and Innovation    |11.048  |11.048   |11.048  |NaN     |NaN            |
+|Office of the Sheriff                  |7.5856  |55.1236  |0.0142  |9.644   |1.27           |
+|Disability Rent Increase Exemption Unit|6.9322  |138.2434 |0.009   |9.0096  |1.3            |
+|Adjudication - Appeals Unit            |6.2856  |165.8328 |0.0058  |8.7093  |1.39           |
+|Department for the Aging               |5.5492  |1506.4301|0.001   |12.462  |2.25           |
+|DPR                                    |3.0494  |29.9024  |0.0     |8.5786  |2.81           |
+|NYCEM                                  |3.0227  |3.0315   |3.0139  |0.0124  |0.0            |
+|Alternative Superintendency            |2.4621  |4.0873   |0.8368  |2.2985  |0.93           |
+|Adjudication - Hearing by Mail         |2.2742  |41.101   |0.006   |2.1812  |0.96           |
+|HPD                                    |0.0106  |0.0383   |0.0034  |0.0136  |1.28           |
++---------------------------------------+--------+---------+--------+--------+---------------+
 
 ```   
-This table provides measures of variability for the resolution time in days by agency, for the 15 agencies with the highest average resolution time. The DPR (Department of Parks and Recreation) is the agency with the highest average resolution time in general, and the DOB (Department of Buildings) is the agency with the highest maximum resolution time among the agencies with the highest average resolution times. This information can be used to identify the agencies that have the highest resolution times, and create improvement plans to reduce these measures.
+This table provides measures of variability for the resolution time in days by agency, for the 15 agencies with the highest average resolution time. The DCA (Department of Consumer Affairs) is the agency with the highest average resolution time in general. This information can be used to identify the agencies that have the highest resolution times, and create improvement plans to reduce these measures.
 
 **Code**
 
 ```scala
-    // Question 8
+  // Question 8
   // Find the agencies with the highest average resolution times, and some variability measures
   // First, create the window function partitioned by agency
-  val wAgencyAcronym = Window.partitionBy("agency")
 
   // Filter by the service requests that are closed, and measure the resolution time of each service request
   // Find the average, max, min, stddev and coefficient of variation
   val avgResolutionTimeByAgencyDF = cleanedServiceRequestsDF
-    .where(col("status") === "Closed")
+    .where(col("status") === "Closed" and
+    col("agency_name").contains("School") === false)
     .withColumn("resolution_time_days",
       round((col("closed_date").cast("long") -
         col("created_date").cast("long")) / 86400,4)
     )
     .withColumn("avg_time",
-      round(avg(col("resolution_time_days")).over(wAgencyAcronym),4)
+      round(avg(col("resolution_time_days")).over(wAgency),4)
     )
     .withColumn("max_time",
-      round(max(col("resolution_time_days")).over(wAgencyAcronym),4)
+      round(max(col("resolution_time_days")).over(wAgency),4)
     )
     .withColumn("min_time",
-      when(round(min(col("resolution_time_days")).over(wAgencyAcronym),4) < 0, "Undefined")
-        .otherwise(round(min(col("resolution_time_days")).over(wAgencyAcronym),4))
+      when(round(min(col("resolution_time_days")).over(wAgency),4) < 0, "Undefined")
+        .otherwise(round(min(col("resolution_time_days")).over(wAgency),4))
     )
     .withColumn("stddev",
-      round(stddev(col("resolution_time_days")).over(wAgencyAcronym),4)
+      round(stddev(col("resolution_time_days")).over(wAgency),4)
     )
     .withColumn("coefficient_var",
       round(col("stddev") / col("avg_time"),2)
     )
     // Select the required columns for the report
     .select(
-      col("agency").as("agency_acronym"),
+      col("agency_name"),
       col("avg_time"),
       col("max_time"),
       col("min_time"),
@@ -730,3 +730,102 @@ This table provides measures of variability for the resolution time in days by a
     
  ```
 
+### 3.9. What are the most recurrent complaint types by month of the year?
+
+```scala
++-----+-------------------------+-----------------+----------------+---------------------------+--------------------------+
+|month|recurrent_complaint_types|count_SR_by_month|percentage_month|count_SR_by_month/complaint|percentage_complaint/month|
++-----+-------------------------+-----------------+----------------+---------------------------+--------------------------+
+|1    |HEAT/HOT WATER           |2752099          |8.82 %          |358399                     |13.02 %                   |
+|1    |HEATING                  |2752099          |8.82 %          |221757                     |8.06 %                    |
+|1    |Noise - Residential      |2752099          |8.82 %          |203428                     |7.39 %                    |
+|2    |HEAT/HOT WATER           |2396768          |7.68 %          |239551                     |9.99 %                    |
+|2    |Noise - Residential      |2396768          |7.68 %          |192999                     |8.05 %                    |
+|2    |HEATING                  |2396768          |7.68 %          |128828                     |5.38 %                    |
+|3    |Noise - Residential      |2616190          |8.38 %          |207489                     |7.93 %                    |
+|3    |HEAT/HOT WATER           |2616190          |8.38 %          |194179                     |7.42 %                    |
+|3    |Street Condition         |2616190          |8.38 %          |161653                     |6.18 %                    |
+|4    |Noise - Residential      |2425176          |7.77 %          |229092                     |9.45 %                    |
+|4    |Illegal Parking          |2425176          |7.77 %          |133446                     |5.50 %                    |
+|4    |Street Condition         |2425176          |7.77 %          |125349                     |5.17 %                    |
+|5    |Noise - Residential      |2675354          |8.57 %          |303409                     |11.34 %                   |
+|5    |Illegal Parking          |2675354          |8.57 %          |158198                     |5.91 %                    |
+|5    |Noise - Street/Sidewalk  |2675354          |8.57 %          |122188                     |4.57 %                    |
+|6    |Noise - Residential      |2826118          |9.06 %          |276568                     |9.79 %                    |
+|6    |Noise - Street/Sidewalk  |2826118          |9.06 %          |170405                     |6.03 %                    |
+|6    |Illegal Parking          |2826118          |9.06 %          |167212                     |5.92 %                    |
+|7    |Noise - Residential      |2821758          |9.04 %          |285239                     |10.11 %                   |
+|7    |Illegal Parking          |2821758          |9.04 %          |159871                     |5.67 %                    |
+|7    |Water System             |2821758          |9.04 %          |153206                     |5.43 %                    |
+|8    |Noise - Residential      |2751402          |8.82 %          |271543                     |9.87 %                    |
+|8    |Illegal Parking          |2751402          |8.82 %          |157042                     |5.71 %                    |
+|8    |Noise - Street/Sidewalk  |2751402          |8.82 %          |138859                     |5.05 %                    |
+|9    |Noise - Residential      |2684293          |8.60 %          |301073                     |11.22 %                   |
+|9    |Illegal Parking          |2684293          |8.60 %          |175432                     |6.54 %                    |
+|9    |Noise - Street/Sidewalk  |2684293          |8.60 %          |129603                     |4.83 %                    |
+|10   |Noise - Residential      |2535333          |8.12 %          |229510                     |9.05 %                    |
+|10   |HEAT/HOT WATER           |2535333          |8.12 %          |152182                     |6.00 %                    |
+|10   |Illegal Parking          |2535333          |8.12 %          |141633                     |5.59 %                    |
+|11   |HEAT/HOT WATER           |2388163          |7.65 %          |271203                     |11.36 %                   |
+|11   |Noise - Residential      |2388163          |7.65 %          |191160                     |8.00 %                    |
+|11   |HEATING                  |2388163          |7.65 %          |138282                     |5.79 %                    |
+|12   |HEAT/HOT WATER           |2336279          |7.49 %          |271179                     |11.61 %                   |
+|12   |Noise - Residential      |2336279          |7.49 %          |198466                     |8.49 %                    |
+|12   |HEATING                  |2336279          |7.49 %          |146540                     |6.27 %                    |
++-----+-------------------------+-----------------+----------------+---------------------------+--------------------------+
+```
+
+The report shows the most recurrent complaint types by month of the year, with the count of SR by month, and by complaint per month, and the percentages of each of the counts to the corresponding total amount. This information is useful to understand the behaviour of the different complaint types by the seasons of the year, and to prepare for certain issues that the citizens face in some specific months, for example, the fact that in winter there are more SR by "Heating", caused by the cold temperatures and the requirements of heating services in each house.
+
+**Code**
+
+```scala
+  // Question 9
+  // Find the most recurrent complaint types by month of the year
+
+  // Create the Window functions partitioned by month and by month and complaint type
+  val wMonth = Window.partitionBy("month")
+  val wMonthAndComplaint = Window.partitionBy("month", "complaint_type")
+
+  // Filter to exclude the unspecified complaint types
+  // Count service requests by month and by month and complaint type, and create ranks based on that
+  val complaintsByMonthDF = cleanedServiceRequestsDF
+    .where(col("complaint_type") =!= "Unspecified")
+    .withColumn(
+      "month",
+      month(col("created_date"))
+    )
+    .withColumn(
+      "count_SR_by_month",
+      count(lit(1)).over(wMonth)
+    )
+    .withColumn(
+      "count_SR_by_month/complaint",
+      count(lit(1)).over(wMonthAndComplaint)
+    )
+    .withColumn(
+      "rank_complaint",
+      dense_rank().over(wMonth.orderBy(col("count_SR_by_month/complaint").desc))
+    )
+    // Filter by the complaints with more service requests
+    .where(
+      (col("rank_complaint") <= 3)
+    )
+    .withColumn(
+      "percentage_month", percentageFormat(col("count_SR_by_month") / totalRows)
+    )
+    .withColumn(
+      "percentage_complaint/month", percentageFormat(col("count_SR_by_month/complaint") / col("count_SR_by_month"))
+    )
+    // Select the required columns for the report
+    .select(
+      col("month"),
+      col("complaint_type").as("recurrent_complaint_types"),
+      col("count_SR_by_month"),
+      col("percentage_month"),
+      col("count_SR_by_month/complaint"),
+      col("percentage_complaint/month")
+    )
+    .distinct()
+    .orderBy(col("month"), col("count_SR_by_month/complaint").desc)
+    ```
